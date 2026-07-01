@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: gnd-publisher
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
