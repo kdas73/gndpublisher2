@@ -13,6 +13,7 @@ application-secrets.local.yml
 *.db
 *.sqlite
 *.sqlite3
+sqlite3.exe
 
 *.log
 tmp/
