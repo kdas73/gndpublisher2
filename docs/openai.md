@@ -47,6 +47,7 @@ Initial prompt files:
 
 ```text
 src/main/resources/prompts/classification-v1.txt
+src/main/resources/prompts/editorial-rules-v1.txt
 src/main/resources/prompts/summary-v1.txt
 src/main/resources/prompts/translation-v1.txt
 ```
@@ -54,6 +55,7 @@ src/main/resources/prompts/translation-v1.txt
 Rules:
 
 - The prompt file name should match the application-managed `promptVersion`.
+- The editorial rules file name should match the application-managed `editorialRulesVersion`.
 - Prompt templates should be loaded through a dedicated prompt-loading component in the OpenAI integration layer.
 - Prompt text changes must update the corresponding `promptVersion` when behavior changes.
 - Prompt files may contain template placeholders, but JSON payloads must remain validated DTOs.

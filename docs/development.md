@@ -145,7 +145,7 @@ src/test/resources/fixtures/openai/
 
 ## Configuration Guidelines
 
-- Keep RSS source URLs configurable.
+- Keep RSS source URLs configurable through the `rss_sources` database table, not application YAML.
 - Keep schedule intervals configurable.
 - Keep all possible categories configurable.
 - Keep categories selected for publication configurable separately from the full category list.

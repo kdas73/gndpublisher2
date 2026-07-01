@@ -39,7 +39,7 @@ The application should automate multilingual news publishing while preserving th
 
 - The application runs continuously as a backend service.
 - Scheduling should be configurable.
-- RSS source list, category rules, languages, and Telegram channel mapping should be configurable without code changes where practical.
+- RSS source list should be managed through the database; category rules, languages, and Telegram channel mapping should be configurable without code changes where practical.
 - Local development uses SQLite 3.
 - Cloud runtime uses PostgreSQL.
 - Cloud deployment uses Docker and a Kubernetes service on AWS.

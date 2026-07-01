@@ -16,13 +16,13 @@ GND Publisher is a Spring Boot service organized around a scheduled news process
 - Telegram publishing: sends translated messages to Telegram channels.
 - Important news digest publishing: periodically publishes a post with links to already published events that are important because they are covered by more than the configured number of semantic duplicates.
 - Cleanup: deletes or archives records older than the configured retention period.
-- Configuration: defines RSS sources, all possible categories, publishable categories, free-form editorial classification rules, per-run source publication limits, important news digest settings, target languages, Telegram routing, OpenAI settings, and provider credentials.
+- Configuration: defines all possible categories, publishable categories, free-form editorial classification rules, per-run source publication limits, important news digest settings, target languages, Telegram routing, OpenAI settings, and provider credentials. RSS source links are stored only in the database.
 - Deployment: packages the Spring Boot service as a Docker image and runs it on a Kubernetes service on AWS.
 
 ## Processing Pipeline
 
 1. Scheduler starts an ingestion run.
-2. The feed ingestion component reads all enabled RSS sources.
+2. The feed ingestion component reads all enabled RSS sources from the database.
 3. Each feed entry is normalized into an internal news item.
 4. The persistence layer stores only source-level new or changed items.
 5. The categorization request includes the current news item, all configured category options, publishable category codes, free-form editorial rules, and existing semantic event keys from a configured lookup time window.
@@ -134,9 +134,7 @@ com.gnd.publisher
   config
     OpenAiProperties.java
     TelegramProperties.java
-    RssSourceProperties.java
     CategoryProperties.java
-    EditorialRulesProperties.java
     PublishingProperties.java
     ImportantNewsDigestProperties.java
     SchedulerProperties.java
@@ -243,7 +241,7 @@ com.gnd.publisher
 
 ## Layer Responsibilities
 
-- `config`: Spring configuration and typed properties for RSS, categories, editorial rules, publishing limits, scheduling, cleanup retention, OpenAI, Telegram, profiles, and database settings.
+- `config`: Spring configuration and typed properties for categories, editorial rules, publishing limits, scheduling, cleanup retention, OpenAI, Telegram, profiles, and database settings. RSS source URLs are not runtime properties; they are database records.
 - `scheduler`: scheduled entry points only. Scheduler classes should trigger services and should not contain business logic.
 - `service`: application business logic and orchestration: ingestion, source deduplication, semantic event grouping, categorization, source quota selection, summary generation, translation, routing, publication, important news digest publishing, and cleanup.
 - `integration`: external system clients and adapters for RSS, OpenAI, and Telegram.
@@ -273,8 +271,8 @@ Do not add `controller` packages until the application needs a REST API, admin A
 - Categorization model: `GPT5.5-mini`.
 - Translation model: `GPT-5.5`.
 - Summary generation model: `GPT-5.5`.
-- OpenAI prompts and model names should be configurable.
-- OpenAI prompt templates must be stored as text files under `src/main/resources/prompts/`.
+- OpenAI prompt versions and model names should be configurable.
+- OpenAI prompt templates and editorial classification rules must be stored as text files under `src/main/resources/prompts/`.
 - OpenAI JSON request and response contracts are defined in `docs/openai.md`.
 - The application configuration must define all possible categories and a separate list of categories selected for publication.
 - The application configuration must define free-form editorial classification rules and an editorial rules version.
