@@ -1,0 +1,801 @@
+databaseChangeLog:
+  - property:
+      name: id.type
+      value: INTEGER
+      dbms: sqlite
+  - property:
+      name: id.type
+      value: BIGINT
+      dbms: postgresql
+
+  - changeSet:
+      id: 001-initial-schema
+      author: codex
+      changes:
+        - createTable:
+            tableName: rss_sources
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: categories
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_categories_code
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1000)
+              - column:
+                  name: enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publishable
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publication_priority
+                  type: INT
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: semantic_news_events
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: semantic_key
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: ${id.type}
+                  constraints:
+                    foreignKeyName: fk_semantic_events_category
+                    references: categories(id)
+              - column:
+                  name: first_seen_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_seen_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: news_items
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: source_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_news_items_source
+                    references: rss_sources(id)
+              - column:
+                  name: source_url
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_id
+                  type: VARCHAR(500)
+              - column:
+                  name: title
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: summary
+                  type: CLOB
+              - column:
+                  name: published_at
+                  type: TIMESTAMP
+              - column:
+                  name: fetched_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: semantic_event_id
+                  type: ${id.type}
+                  constraints:
+                    foreignKeyName: fk_news_items_semantic_event
+                    references: semantic_news_events(id)
+              - column:
+                  name: classification_status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: classification_confidence
+                  type: DECIMAL(5,4)
+              - column:
+                  name: classified_at
+                  type: TIMESTAMP
+              - column:
+                  name: processing_run_id
+                  type: VARCHAR(100)
+              - column:
+                  name: publication_candidate
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: selected_for_publication
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rejection_reason
+                  type: VARCHAR(100)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: news_item_categories
+            columns:
+              - column:
+                  name: news_item_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_news_item_categories
+                    foreignKeyName: fk_news_item_categories_news_item
+                    references: news_items(id)
+              - column:
+                  name: category_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_news_item_categories
+                    foreignKeyName: fk_news_item_categories_category
+                    references: categories(id)
+              - column:
+                  name: matched_by
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: confidence
+                  type: DECIMAL(5,4)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: classification_runs
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: news_item_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_classification_runs_news_item
+                    references: news_items(id)
+              - column:
+                  name: semantic_event_id
+                  type: ${id.type}
+                  constraints:
+                    foreignKeyName: fk_classification_runs_semantic_event
+                    references: semantic_news_events(id)
+              - column:
+                  name: model
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: input_keys_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lookup_window_started_at
+                  type: TIMESTAMP
+              - column:
+                  name: lookup_window_ended_at
+                  type: TIMESTAMP
+              - column:
+                  name: editorial_rules_version
+                  type: VARCHAR(100)
+              - column:
+                  name: returned_semantic_key
+                  type: VARCHAR(500)
+              - column:
+                  name: semantic_key_action
+                  type: VARCHAR(50)
+              - column:
+                  name: matched_semantic_event_id
+                  type: ${id.type}
+                  constraints:
+                    foreignKeyName: fk_classification_runs_matched_event
+                    references: semantic_news_events(id)
+              - column:
+                  name: category_id
+                  type: ${id.type}
+                  constraints:
+                    foreignKeyName: fk_classification_runs_category
+                    references: categories(id)
+              - column:
+                  name: confidence
+                  type: DECIMAL(5,4)
+              - column:
+                  name: raw_response
+                  type: CLOB
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: translations
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: semantic_event_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_translations_semantic_event
+                    references: semantic_news_events(id)
+              - column:
+                  name: news_item_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_translations_news_item
+                    references: news_items(id)
+              - column:
+                  name: target_language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: summary
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: news_summaries
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: news_item_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_news_summaries_news_item
+                    references: news_items(id)
+              - column:
+                  name: language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: summary
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: telegram_channels
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: username
+                  type: VARCHAR(255)
+              - column:
+                  name: message_url_template
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: publications
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: semantic_event_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_publications_semantic_event
+                    references: semantic_news_events(id)
+              - column:
+                  name: news_item_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_publications_news_item
+                    references: news_items(id)
+              - column:
+                  name: translation_id
+                  type: ${id.type}
+                  constraints:
+                    foreignKeyName: fk_publications_translation
+                    references: translations(id)
+              - column:
+                  name: telegram_channel_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_publications_telegram_channel
+                    references: telegram_channels(id)
+              - column:
+                  name: target_language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: telegram_message_id
+                  type: VARCHAR(100)
+              - column:
+                  name: telegram_message_url
+                  type: VARCHAR(1000)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: error_message
+                  type: CLOB
+              - column:
+                  name: published_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: important_news_digest_posts
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: telegram_channel_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_digest_posts_telegram_channel
+                    references: telegram_channels(id)
+              - column:
+                  name: target_language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duplicate_threshold
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: telegram_message_id
+                  type: VARCHAR(100)
+              - column:
+                  name: telegram_message_url
+                  type: VARCHAR(1000)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: error_message
+                  type: CLOB
+              - column:
+                  name: published_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: important_news_digest_items
+            columns:
+              - column:
+                  name: id
+                  type: ${id.type}
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: important_news_digest_post_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_digest_items_post
+                    references: important_news_digest_posts(id)
+              - column:
+                  name: semantic_event_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_digest_items_semantic_event
+                    references: semantic_news_events(id)
+              - column:
+                  name: publication_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_digest_items_publication
+                    references: publications(id)
+              - column:
+                  name: telegram_channel_id
+                  type: ${id.type}
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_digest_items_telegram_channel
+                    references: telegram_channels(id)
+              - column:
+                  name: target_language
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publication_url
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_item_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createIndex:
+            tableName: rss_sources
+            indexName: uk_rss_sources_url
+            unique: true
+            columns:
+              - column:
+                  name: url
+        - createIndex:
+            tableName: semantic_news_events
+            indexName: idx_semantic_events_key
+            columns:
+              - column:
+                  name: semantic_key
+        - createIndex:
+            tableName: semantic_news_events
+            indexName: idx_semantic_events_last_seen_at
+            columns:
+              - column:
+                  name: last_seen_at
+        - createIndex:
+            tableName: news_items
+            indexName: idx_news_items_semantic_event_id
+            columns:
+              - column:
+                  name: semantic_event_id
+        - createIndex:
+            tableName: news_items
+            indexName: idx_news_items_classification_status
+            columns:
+              - column:
+                  name: classification_status
+        - createIndex:
+            tableName: news_items
+            indexName: idx_news_items_run_source
+            columns:
+              - column:
+                  name: processing_run_id
+              - column:
+                  name: source_id
+        - createIndex:
+            tableName: news_items
+            indexName: idx_news_items_source_selected
+            columns:
+              - column:
+                  name: source_id
+              - column:
+                  name: selected_for_publication
+        - createIndex:
+            tableName: classification_runs
+            indexName: idx_classification_runs_news_item_id
+            columns:
+              - column:
+                  name: news_item_id
+        - createIndex:
+            tableName: classification_runs
+            indexName: idx_classification_runs_created_at
+            columns:
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: translations
+            indexName: idx_translations_event_language
+            columns:
+              - column:
+                  name: semantic_event_id
+              - column:
+                  name: target_language
+        - createIndex:
+            tableName: publications
+            indexName: uk_publications_event_channel_language
+            unique: true
+            columns:
+              - column:
+                  name: semantic_event_id
+              - column:
+                  name: telegram_channel_id
+              - column:
+                  name: target_language
+        - createIndex:
+            tableName: publications
+            indexName: idx_publications_message_url
+            columns:
+              - column:
+                  name: telegram_message_url
+        - createIndex:
+            tableName: important_news_digest_posts
+            indexName: idx_digest_posts_channel_language_published
+            columns:
+              - column:
+                  name: telegram_channel_id
+              - column:
+                  name: target_language
+              - column:
+                  name: published_at
+        - createIndex:
+            tableName: important_news_digest_items
+            indexName: uk_digest_items_event_channel_language
+            unique: true
+            columns:
+              - column:
+                  name: semantic_event_id
+              - column:
+                  name: telegram_channel_id
+              - column:
+                  name: target_language

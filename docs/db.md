@@ -37,6 +37,15 @@ Expected fields:
 - `created_at`
 - `updated_at`
 
+`url` is unique so baseline seed data and future source management cannot create duplicate source records for the same feed.
+
+Baseline seed sources:
+
+- Kathimerini: `https://feeds.feedburner.com/kathimerini/DJpy`
+- Ta Nea: `https://www.tanea.gr/feed/`
+
+Both baseline sources are initialized with `language = el` and `enabled = true`.
+
 ### news_items
 
 Stores normalized feed entries.

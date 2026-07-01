@@ -1,6 +1,12 @@
 spring:
   application:
     name: gnd-publisher
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yml
 
 management:
   endpoints:
