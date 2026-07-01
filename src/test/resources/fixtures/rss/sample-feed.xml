@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Greek News Fixture</title>
+    <item>
+      <guid>article-1</guid>
+      <title>First fixture article</title>
+      <link>https://example.test/news/first</link>
+      <description><![CDATA[Fixture summary for the first article.]]></description>
+      <pubDate>Wed, 01 Jul 2026 10:15:30 GMT</pubDate>
+    </item>
+    <item>
+      <title>Second fixture article</title>
+      <link>https://example.test/news/second</link>
+    </item>
+  </channel>
+</rss>

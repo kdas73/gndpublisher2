@@ -214,7 +214,7 @@ class ConfigurationPropertiesBindingTest {
     private static Map<String, String> schedulerProperties() {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("gnd.scheduler.ingestion.enabled", "true");
-        values.put("gnd.scheduler.ingestion.cron", "0 */15 * * * *");
+        values.put("gnd.scheduler.ingestion.cron", "0 */3 * * * *");
         values.put("gnd.scheduler.publication.enabled", "true");
         values.put("gnd.scheduler.publication.cron", "0 */20 * * * *");
         values.put("gnd.scheduler.important-news-digest.enabled", "true");
