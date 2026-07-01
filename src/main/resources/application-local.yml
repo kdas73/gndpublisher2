@@ -5,6 +5,8 @@ spring:
     url: jdbc:sqlite:./data/gnd-publisher-local.sqlite3
     driver-class-name: org.sqlite.JDBC
   jpa:
+    hibernate:
+      ddl-auto: none
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     properties:
       hibernate:
