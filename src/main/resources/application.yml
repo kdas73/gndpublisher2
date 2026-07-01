@@ -103,7 +103,7 @@ gnd:
   scheduler:
     ingestion:
       enabled: true
-      cron: "0 */15 * * * *"
+      cron: "0 */3 * * * *"
     publication:
       enabled: true
       cron: "0 */20 * * * *"

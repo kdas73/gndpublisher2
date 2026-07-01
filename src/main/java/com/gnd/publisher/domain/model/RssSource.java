@@ -30,7 +30,34 @@ public class RssSource extends AuditableEntity {
     protected RssSource() {
     }
 
+    private RssSource(String name, String url, String language, boolean enabled) {
+        this.name = name;
+        this.url = url;
+        this.language = language;
+        this.enabled = enabled;
+    }
+
+    public static RssSource create(String name, String url, String language, boolean enabled) {
+        return new RssSource(name, url, language, enabled);
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 }

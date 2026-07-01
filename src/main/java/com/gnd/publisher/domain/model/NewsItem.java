@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import com.gnd.publisher.domain.enums.ClassificationStatus;
 import com.gnd.publisher.domain.enums.RejectionReason;
+import com.gnd.publisher.dto.rss.RssFeedItemDto;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -82,7 +83,90 @@ public class NewsItem extends AuditableEntity {
     protected NewsItem() {
     }
 
+    private NewsItem(
+            RssSource source,
+            String sourceUrl,
+            String externalId,
+            String title,
+            String summary,
+            Instant publishedAt,
+            Instant fetchedAt,
+            String originalLanguage) {
+        this.source = source;
+        this.sourceUrl = sourceUrl;
+        this.externalId = externalId;
+        this.title = title;
+        this.summary = summary;
+        this.publishedAt = publishedAt;
+        this.fetchedAt = fetchedAt;
+        this.originalLanguage = originalLanguage;
+        this.classificationStatus = ClassificationStatus.PENDING;
+        this.publicationCandidate = false;
+        this.selectedForPublication = false;
+    }
+
+    public static NewsItem fromRssFeedItem(RssSource source, RssFeedItemDto feedItem, Instant fetchedAt) {
+        String sourceUrl = feedItem.link().orElse(source.getUrl());
+        return new NewsItem(
+                source,
+                sourceUrl,
+                feedItem.externalId().orElse(null),
+                feedItem.title(),
+                feedItem.summary().orElse(null),
+                feedItem.publishedAt().orElse(null),
+                fetchedAt,
+                source.getLanguage());
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public RssSource getSource() {
+        return source;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public String getExternalId() {
+        return externalId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public Instant getPublishedAt() {
+        return publishedAt;
+    }
+
+    public Instant getFetchedAt() {
+        return fetchedAt;
+    }
+
+    public String getOriginalLanguage() {
+        return originalLanguage;
+    }
+
+    public ClassificationStatus getClassificationStatus() {
+        return classificationStatus;
+    }
+
+    public boolean isPublicationCandidate() {
+        return publicationCandidate;
+    }
+
+    public boolean isSelectedForPublication() {
+        return selectedForPublication;
+    }
+
+    public RejectionReason getRejectionReason() {
+        return rejectionReason;
     }
 }
