@@ -1,0 +1,10 @@
+package com.gnd.publisher.domain.enums;
+
+public enum RejectionReason {
+    NOT_PUBLISHABLE_CATEGORY,
+    EDITORIAL_RULE_EXCLUDED,
+    SOURCE_RUN_QUOTA_EXCEEDED,
+    DUPLICATE_SEMANTIC_EVENT,
+    LOW_CONFIDENCE,
+    CLASSIFICATION_FAILED
+}

@@ -1,6 +1,14 @@
 spring:
   config:
     import: optional:file:./application-secrets.local.yml
+  datasource:
+    url: jdbc:sqlite:./data/gnd-publisher-local.sqlite3
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
 
 gnd:
   profile: local

@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-seed-rss-sources
+      author: codex
+      changes:
+        - insert:
+            tableName: rss_sources
+            columns:
+              - column:
+                  name: name
+                  value: Kathimerini
+              - column:
+                  name: url
+                  value: https://feeds.feedburner.com/kathimerini/DJpy
+              - column:
+                  name: language
+                  value: el
+              - column:
+                  name: enabled
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueDate: 2026-07-01T00:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2026-07-01T00:00:00
+        - insert:
+            tableName: rss_sources
+            columns:
+              - column:
+                  name: name
+                  value: Ta Nea
+              - column:
+                  name: url
+                  value: https://www.tanea.gr/feed/
+              - column:
+                  name: language
+                  value: el
+              - column:
+                  name: enabled
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueDate: 2026-07-01T00:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2026-07-01T00:00:00
