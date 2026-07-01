@@ -2,7 +2,7 @@
 
 ## Goal
 
-Define typed configuration for profiles, RSS sources, categories, editorial rules, publishing limits, OpenAI, Telegram, scheduler, and cleanup.
+Define typed configuration for profiles, categories, editorial rules, publishing limits, OpenAI, Telegram, scheduler, and cleanup. RSS source links are database records, not runtime properties.
 
 ## Scope
 
@@ -15,9 +15,7 @@ Define typed configuration for profiles, RSS sources, categories, editorial rule
 
 ## Deliverables
 
-- `RssSourceProperties`.
 - `CategoryProperties`.
-- `EditorialRulesProperties`.
 - `PublishingProperties`.
 - `OpenAiProperties`.
 - `TelegramProperties`.

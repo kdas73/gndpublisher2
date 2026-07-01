@@ -1,0 +1,2 @@
+For sports news, publish only items with concrete match results.
+Ignore celebrity death news unless it has direct political or public-safety impact.

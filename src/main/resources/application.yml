@@ -11,3 +11,104 @@ management:
     health:
       probes:
         enabled: true
+
+gnd:
+  profile: ${GND_PROFILE:local}
+  categories:
+    options:
+      - code: politics
+        name: Politics
+        description: Government, elections, laws, public administration
+        publication-priority: 10
+        enabled: true
+      - code: economy
+        name: Economy
+        description: Economy, business, markets, labor, public finance
+        publication-priority: 20
+        enabled: true
+      - code: society
+        name: Society
+        description: Public safety, courts, education, health, daily life
+        publication-priority: 30
+        enabled: true
+      - code: weather
+        name: Weather
+        description: Weather alerts, climate events, natural hazards
+        publication-priority: 40
+        enabled: true
+      - code: sports
+        name: Sports
+        description: Sports results, competitions, teams, athletes
+        publication-priority: 50
+        enabled: true
+    publishable-codes:
+      - politics
+      - economy
+      - society
+      - weather
+  publishing:
+    target-languages:
+      - en
+    default-max-items-per-source-per-run: 3
+    source-quota-overrides: {}
+    summary-max-characters: 600
+    telegram-max-message-characters: 3500
+    digest:
+      enabled: true
+      duplicate-threshold: 2
+      channel-routing-key: important-news
+  important-news-digest:
+    enabled: true
+    cron: "0 0 */6 * * *"
+    duplicate-threshold: 2
+    target-language: en
+    channel-code: important-news-en
+    lookback-window: 7d
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    models:
+      categorization: GPT5.5-mini
+      translation: GPT-5.5
+      summary: GPT-5.5
+    prompts:
+      classification-version: classification-v1
+      editorial-rules-version: editorial-rules-v1
+      summary-version: summary-v1
+      translation-version: translation-v1
+    timeouts:
+      connect: 5s
+      read: 60s
+    semantic-event-lookup-window: 3d
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    channels:
+      - code: news-en
+        language: en
+        channel-id: ${TELEGRAM_NEWS_EN_CHANNEL_ID:}
+        username: ${TELEGRAM_NEWS_EN_USERNAME:}
+        message-url-template: ${TELEGRAM_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}
+        enabled: true
+      - code: important-news-en
+        language: en
+        channel-id: ${TELEGRAM_IMPORTANT_NEWS_EN_CHANNEL_ID:}
+        username: ${TELEGRAM_IMPORTANT_NEWS_EN_USERNAME:}
+        message-url-template: ${TELEGRAM_IMPORTANT_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}
+        enabled: true
+  scheduler:
+    ingestion:
+      enabled: true
+      cron: "0 */15 * * * *"
+    publication:
+      enabled: true
+      cron: "0 */20 * * * *"
+    important-news-digest:
+      enabled: true
+      cron: "0 0 */6 * * *"
+    cleanup:
+      enabled: true
+      cron: "0 0 3 * * *"
+  cleanup:
+    news-items-retention: 30d
+    classification-runs-retention: 30d
+    publications-retention: 180d
+    digest-retention: 180d

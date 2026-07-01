@@ -1,2 +1,30 @@
 gnd:
   profile: prod
+  publishing:
+    default-max-items-per-source-per-run: ${GND_DEFAULT_MAX_ITEMS_PER_SOURCE_PER_RUN:5}
+  scheduler:
+    ingestion:
+      cron: "${GND_INGESTION_CRON:0 */10 * * * *}"
+    publication:
+      cron: "${GND_PUBLICATION_CRON:0 */15 * * * *}"
+    important-news-digest:
+      cron: "${GND_IMPORTANT_NEWS_DIGEST_CRON:0 0 */6 * * *}"
+    cleanup:
+      cron: "${GND_CLEANUP_CRON:0 0 2 * * *}"
+  openai:
+    api-key: ${OPENAI_API_KEY}
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN}
+    channels:
+      - code: news-en
+        language: en
+        channel-id: ${TELEGRAM_NEWS_EN_CHANNEL_ID}
+        username: ${TELEGRAM_NEWS_EN_USERNAME:}
+        message-url-template: ${TELEGRAM_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}
+        enabled: true
+      - code: important-news-en
+        language: en
+        channel-id: ${TELEGRAM_IMPORTANT_NEWS_EN_CHANNEL_ID}
+        username: ${TELEGRAM_IMPORTANT_NEWS_EN_USERNAME:}
+        message-url-template: ${TELEGRAM_IMPORTANT_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}
+        enabled: true

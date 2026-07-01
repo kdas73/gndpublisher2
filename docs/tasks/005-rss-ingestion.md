@@ -11,7 +11,7 @@ Read configured RSS feeds and normalize entries into internal news items.
 - Implement `FeedIngestionScheduler`.
 - Normalize RSS fields into `NewsItem`.
 - Handle per-source failures without stopping the whole run.
-- Add initial configured RSS sources for local/manual verification.
+- Add initial RSS sources for local/manual verification as database seed data or migrations.
 
 ## Initial Sources
 
@@ -31,7 +31,7 @@ These URLs are for runtime/manual verification. Unit tests should use local RSS 
 - `FeedIngestionService`.
 - `FeedIngestionScheduler`.
 - DTOs for RSS feed items.
-- Initial local source configuration or seed data for Kathimerini and Ta Nea.
+- Initial local seed data for Kathimerini and Ta Nea.
 
 ## Tests
 

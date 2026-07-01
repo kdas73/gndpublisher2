@@ -4,3 +4,6 @@ spring:
 
 gnd:
   profile: local
+  cleanup:
+    news-items-retention: 14d
+    classification-runs-retention: 14d
