@@ -9,7 +9,7 @@ Translate selected publishable semantic events into configured target languages.
 - Determine target languages.
 - Call GPT-5.5 translation flow.
 - Persist translations by semantic event and target language.
-- Preserve source attribution requirements.
+- Preserve translated meaning while leaving source attribution to Telegram message mapping.
 
 ## Deliverables
 
@@ -28,4 +28,4 @@ Translate selected publishable semantic events into configured target languages.
 ## Done When
 
 - Selected semantic events have translations for target languages.
-- Translation output includes enough data for Telegram message creation.
+- Translation output provides translated title and summary; Telegram message creation adds source attribution from feed metadata.

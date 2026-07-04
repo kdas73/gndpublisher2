@@ -1,0 +1,10 @@
+{
+  "primaryCategoryCode": "politics",
+  "categoryCodes": ["politics"],
+  "semanticKey": "greek parliament approves new migration bill",
+  "semanticKeyAction": "matched_existing",
+  "matchedSemanticEventId": "event-456",
+  "confidence": 0.91,
+  "shouldPublish": true,
+  "rejectionReason": null
+}

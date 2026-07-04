@@ -1,0 +1,30 @@
+{
+  "newsItem": {
+    "title": "Greek parliament approves new migration bill",
+    "summary": "Greek lawmakers approved a new migration bill after a lengthy debate.",
+    "sourceName": "ERT News",
+    "sourceUrl": "https://example.gr/news/item",
+    "publishedAt": "2026-07-01T10:15:00Z"
+  },
+  "categoryOptions": [
+    {
+      "code": "politics",
+      "description": "Government, elections, laws, public administration"
+    },
+    {
+      "code": "weather",
+      "description": "Weather alerts, climate events, natural hazards"
+    }
+  ],
+  "publishableCategoryCodes": ["politics"],
+  "editorialRules": [
+    "For sports news, publish only items with concrete match results.",
+    "Ignore celebrity death news unless it has direct political or public-safety impact."
+  ],
+  "candidateSemanticEvents": [
+    {
+      "id": "event-456",
+      "semanticKey": "greek parliament debates migration bill"
+    }
+  ]
+}

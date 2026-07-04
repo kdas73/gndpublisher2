@@ -279,7 +279,7 @@ Do not add `controller` packages until the application needs a REST API, admin A
 - The application configuration must define the default max publishable items per source per run and may define per-source overrides.
 - The application configuration must define important news digest schedule, importance threshold, and destination channel routing.
 - Categorization output should be structured enough to map reliably to configured category codes and semantic event keys.
-- Translation and summary output should preserve source meaning and avoid removing source attribution.
+- Translation and summary output should preserve source meaning; source attribution is added by Telegram message mapping from feed metadata.
 
 ## Profiles
 
