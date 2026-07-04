@@ -26,6 +26,7 @@ public class FeedIngestionService {
 
     private final RssSourceRepository rssSourceRepository;
     private final NewsItemRepository newsItemRepository;
+    private final SourceDeduplicationService sourceDeduplicationService;
     private final RssClient rssClient;
     private final RssFeedParser rssFeedParser;
     private final Clock clock;
@@ -34,19 +35,22 @@ public class FeedIngestionService {
     public FeedIngestionService(
             RssSourceRepository rssSourceRepository,
             NewsItemRepository newsItemRepository,
+            SourceDeduplicationService sourceDeduplicationService,
             RssClient rssClient,
             RssFeedParser rssFeedParser) {
-        this(rssSourceRepository, newsItemRepository, rssClient, rssFeedParser, Clock.systemUTC());
+        this(rssSourceRepository, newsItemRepository, sourceDeduplicationService, rssClient, rssFeedParser, Clock.systemUTC());
     }
 
     FeedIngestionService(
             RssSourceRepository rssSourceRepository,
             NewsItemRepository newsItemRepository,
+            SourceDeduplicationService sourceDeduplicationService,
             RssClient rssClient,
             RssFeedParser rssFeedParser,
             Clock clock) {
         this.rssSourceRepository = rssSourceRepository;
         this.newsItemRepository = newsItemRepository;
+        this.sourceDeduplicationService = sourceDeduplicationService;
         this.rssClient = rssClient;
         this.rssFeedParser = rssFeedParser;
         this.clock = clock;
@@ -64,12 +68,19 @@ public class FeedIngestionService {
             String xml = rssClient.fetch(URI.create(source.getUrl()));
             List<RssFeedItemDto> feedItems = rssFeedParser.parse(xml);
             Instant fetchedAt = Instant.now(clock);
-            List<NewsItem> newsItems = feedItems.stream()
-                    .map(feedItem -> NewsItem.fromRssFeedItem(source, feedItem, fetchedAt))
-                    .toList();
+            List<NewsItem> newsItems = sourceDeduplicationService.newItemsForSource(source, feedItems, fetchedAt);
+
+            if (newsItems.isEmpty()) {
+                LOGGER.info("Skipped {} duplicate RSS items from source {}", feedItems.size(), source.getName());
+                return;
+            }
 
             newsItemRepository.saveAll(newsItems);
-            LOGGER.info("Ingested {} RSS items from source {}", newsItems.size(), source.getName());
+            LOGGER.info(
+                    "Ingested {} new RSS items from source {}; skipped {} duplicates",
+                    newsItems.size(),
+                    source.getName(),
+                    feedItems.size() - newsItems.size());
         } catch (RuntimeException exception) {
             LOGGER.warn("Failed to ingest RSS source {} ({})", source.getName(), source.getUrl(), exception);
         }

@@ -742,6 +742,22 @@ databaseChangeLog:
               - column:
                   name: selected_for_publication
         - createIndex:
+            tableName: news_items
+            indexName: idx_news_items_source_external_id
+            columns:
+              - column:
+                  name: source_id
+              - column:
+                  name: external_id
+        - createIndex:
+            tableName: news_items
+            indexName: idx_news_items_source_url
+            columns:
+              - column:
+                  name: source_id
+              - column:
+                  name: source_url
+        - createIndex:
             tableName: classification_runs
             indexName: idx_classification_runs_news_item_id
             columns:

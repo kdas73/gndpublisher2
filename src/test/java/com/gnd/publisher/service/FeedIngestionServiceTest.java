@@ -40,6 +40,9 @@ class FeedIngestionServiceTest {
     private NewsItemRepository newsItemRepository;
 
     @Mock
+    private SourceDeduplicationService sourceDeduplicationService;
+
+    @Mock
     private RssClient rssClient;
 
     @Mock
@@ -57,6 +60,9 @@ class FeedIngestionServiceTest {
         when(rssSourceRepository.findByEnabledTrue()).thenReturn(List.of(source));
         when(rssClient.fetch(URI.create(source.getUrl()))).thenReturn("<rss />");
         when(rssFeedParser.parse("<rss />")).thenReturn(List.of(feedItem));
+        NewsItem deduplicatedNewsItem = NewsItem.fromRssFeedItem(source, feedItem, NOW);
+        when(sourceDeduplicationService.newItemsForSource(source, List.of(feedItem), NOW))
+                .thenReturn(List.of(deduplicatedNewsItem));
 
         service().ingestEnabledSources();
 
@@ -80,18 +86,40 @@ class FeedIngestionServiceTest {
     }
 
     @Test
+    void doesNotSaveWhenAllSourceItemsAreDuplicates() {
+        RssSource source = RssSource.create("Kathimerini", "https://feeds.example.test/kathimerini", "el", true);
+        RssFeedItemDto feedItem = new RssFeedItemDto(
+                Optional.of("external-1"),
+                "Fixture title",
+                Optional.of("https://example.test/news/fixture"),
+                Optional.empty(),
+                Optional.empty());
+        when(rssSourceRepository.findByEnabledTrue()).thenReturn(List.of(source));
+        when(rssClient.fetch(URI.create(source.getUrl()))).thenReturn("<rss />");
+        when(rssFeedParser.parse("<rss />")).thenReturn(List.of(feedItem));
+        when(sourceDeduplicationService.newItemsForSource(source, List.of(feedItem), NOW)).thenReturn(List.of());
+
+        service().ingestEnabledSources();
+
+        verify(newsItemRepository, never()).saveAll(any());
+    }
+
+    @Test
     void continuesWithOtherSourcesWhenOneSourceFails() {
         RssSource failingSource = RssSource.create("Broken", "https://feeds.example.test/broken", "el", true);
         RssSource healthySource = RssSource.create("Healthy", "https://feeds.example.test/healthy", "el", true);
         when(rssSourceRepository.findByEnabledTrue()).thenReturn(List.of(failingSource, healthySource));
         when(rssClient.fetch(URI.create(failingSource.getUrl()))).thenThrow(new IllegalStateException("boom"));
         when(rssClient.fetch(URI.create(healthySource.getUrl()))).thenReturn("<rss />");
-        when(rssFeedParser.parse("<rss />")).thenReturn(List.of(new RssFeedItemDto(
+        RssFeedItemDto healthyFeedItem = new RssFeedItemDto(
                 Optional.empty(),
                 "Healthy item",
                 Optional.empty(),
                 Optional.empty(),
-                Optional.empty())));
+                Optional.empty());
+        when(rssFeedParser.parse("<rss />")).thenReturn(List.of(healthyFeedItem));
+        when(sourceDeduplicationService.newItemsForSource(healthySource, List.of(healthyFeedItem), NOW))
+                .thenReturn(List.of(NewsItem.fromRssFeedItem(healthySource, healthyFeedItem, NOW)));
 
         service().ingestEnabledSources();
 
@@ -113,6 +141,7 @@ class FeedIngestionServiceTest {
         return new FeedIngestionService(
                 rssSourceRepository,
                 newsItemRepository,
+                sourceDeduplicationService,
                 rssClient,
                 rssFeedParser,
                 Clock.fixed(NOW, ZoneOffset.UTC));

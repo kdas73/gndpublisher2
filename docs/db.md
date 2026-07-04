@@ -286,6 +286,8 @@ for digest inclusion.
 - `news_items(classification_status)`
 - `news_items(processing_run_id, source_id)`
 - `news_items(source_id, selected_for_publication)`
+- `news_items(source_id, external_id)`
+- `news_items(source_id, source_url)`
 - `classification_runs(news_item_id)`
 - `classification_runs(created_at)`
 - `translations(semantic_event_id, target_language)`

@@ -118,6 +118,23 @@ public class NewsItem extends AuditableEntity {
                 source.getLanguage());
     }
 
+    public static NewsItem fromRssFeedItem(
+            RssSource source,
+            RssFeedItemDto feedItem,
+            Instant fetchedAt,
+            String sourceUrl,
+            String externalId) {
+        return new NewsItem(
+                source,
+                sourceUrl,
+                externalId,
+                feedItem.title(),
+                feedItem.summary().orElse(null),
+                feedItem.publishedAt().orElse(null),
+                fetchedAt,
+                source.getLanguage());
+    }
+
     public Long getId() {
         return id;
     }
