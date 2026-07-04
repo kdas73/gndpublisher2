@@ -28,15 +28,13 @@ public record OpenAiProperties(
 
     public record Models(
             @NotBlank String categorization,
-            @NotBlank String translation,
-            @NotBlank String summary) {
+            @NotBlank String publicationContent) {
     }
 
     public record Prompts(
             @NotBlank String classificationVersion,
             @NotBlank String editorialRulesVersion,
-            @NotBlank String summaryVersion,
-            @NotBlank String translationVersion) {
+            @NotBlank String publicationContentVersion) {
     }
 
     public record Timeouts(

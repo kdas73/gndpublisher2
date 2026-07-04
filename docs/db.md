@@ -80,7 +80,7 @@ Publication selection fields:
 
 - `publication_candidate`: true when the item is eligible after classification and category filtering.
 - `selected_for_publication`: true when the item survives per-source run quota selection.
-- `rejection_reason`: explains why an item did not continue to summary, translation, and publication.
+- `rejection_reason`: explains why an item did not continue to publication content generation and publication.
 
 Recommended `rejection_reason` values:
 
@@ -161,7 +161,7 @@ Expected fields:
 
 ### translations
 
-Stores translated text for selected semantic events or their canonical news items. Translation is performed by OpenAI GPT-5.5.
+Stores target-language publication content for selected semantic events or their canonical news items. Publication content generation is performed by OpenAI GPT-5.5.
 
 Expected fields:
 
@@ -178,7 +178,7 @@ Expected fields:
 
 ### news_summaries
 
-Stores generated or improved summaries when the RSS item does not provide a suitable summary. Summary generation is performed by OpenAI GPT-5.5.
+Stores generated or improved source-language summaries if the application later needs a canonical summary separate from target-language publication content. The current OpenAI publication content flow writes target-language title and summary to `translations`.
 
 Expected fields:
 

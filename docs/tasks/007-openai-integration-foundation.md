@@ -18,8 +18,7 @@ Create the OpenAI integration foundation without implementing all business flows
 - `OpenAiClient`.
 - Prompt loader component.
 - `classification-v1.txt`.
-- `summary-v1.txt`.
-- `translation-v1.txt`.
+- `publication-content-v1.txt`.
 - OpenAI DTOs under `com.gnd.publisher.dto.openai`.
 
 ## Tests

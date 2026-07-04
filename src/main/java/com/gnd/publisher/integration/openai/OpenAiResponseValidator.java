@@ -7,9 +7,8 @@ import java.util.stream.Collectors;
 import com.gnd.publisher.dto.openai.CategoryClassificationRequest;
 import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
 import com.gnd.publisher.dto.openai.ClassificationRejectionReasonDto;
+import com.gnd.publisher.dto.openai.PublicationContentResponse;
 import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
-import com.gnd.publisher.dto.openai.SummaryResponse;
-import com.gnd.publisher.dto.openai.TranslationResponse;
 import com.gnd.publisher.exception.OpenAiIntegrationException;
 
 import org.springframework.stereotype.Component;
@@ -68,12 +67,8 @@ public class OpenAiResponseValidator {
         }
     }
 
-    public void validateSummary(SummaryResponse response) {
-        requireConfidence(response.confidence(), "summary");
-    }
-
-    public void validateTranslation(TranslationResponse response) {
-        requireConfidence(response.confidence(), "translation");
+    public void validatePublicationContent(PublicationContentResponse response) {
+        requireConfidence(response.confidence(), "publication content");
     }
 
     private void requireConfidence(double confidence, String responseType) {

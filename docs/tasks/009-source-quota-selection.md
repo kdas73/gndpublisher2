@@ -24,10 +24,10 @@ Limit the number of publishable candidates from each RSS source per processing r
 - Unit tests for default quota.
 - Unit tests for per-source override.
 - Tests for sorting by `publication_priority`, `published_at` descending, and confidence descending.
-- Tests that quota-rejected items are not sent to summary or translation.
+- Tests that quota-rejected items are not sent to publication content generation.
 
 ## Done When
 
-- Only selected candidates continue to summary, translation, and publication.
+- Only selected candidates continue to publication content generation and publication.
 - Rejected items keep a clear `rejection_reason`.
 - No `processing_runs` table is required for MVP.

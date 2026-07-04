@@ -14,10 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gnd.publisher.config.OpenAiProperties;
 import com.gnd.publisher.dto.openai.CategoryClassificationRequest;
 import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
-import com.gnd.publisher.dto.openai.SummaryRequest;
-import com.gnd.publisher.dto.openai.SummaryResponse;
-import com.gnd.publisher.dto.openai.TranslationRequest;
-import com.gnd.publisher.dto.openai.TranslationResponse;
+import com.gnd.publisher.dto.openai.PublicationContentRequest;
+import com.gnd.publisher.dto.openai.PublicationContentResponse;
 import com.gnd.publisher.exception.OpenAiIntegrationException;
 
 import org.springframework.stereotype.Component;
@@ -60,28 +58,15 @@ public class HttpOpenAiClient implements OpenAiClient {
     }
 
     @Override
-    public SummaryResponse summarize(SummaryRequest request) {
-        SummaryResponse response = execute(
-                properties.models().summary(),
-                properties.prompts().summaryVersion(),
-                "summary_response",
-                summaryResponseSchema(),
+    public PublicationContentResponse preparePublicationContent(PublicationContentRequest request) {
+        PublicationContentResponse response = execute(
+                properties.models().publicationContent(),
+                properties.prompts().publicationContentVersion(),
+                "publication_content_response",
+                publicationContentResponseSchema(),
                 request,
-                SummaryResponse.class);
-        validator.validateSummary(response);
-        return response;
-    }
-
-    @Override
-    public TranslationResponse translate(TranslationRequest request) {
-        TranslationResponse response = execute(
-                properties.models().translation(),
-                properties.prompts().translationVersion(),
-                "translation_response",
-                translationResponseSchema(),
-                request,
-                TranslationResponse.class);
-        validator.validateTranslation(response);
+                PublicationContentResponse.class);
+        validator.validatePublicationContent(response);
         return response;
     }
 
@@ -233,16 +218,7 @@ public class HttpOpenAiClient implements OpenAiClient {
                         "rejectionReason"));
     }
 
-    private Map<String, Object> summaryResponseSchema() {
-        return objectSchema(
-                Map.of(
-                        "title", stringSchema(),
-                        "summary", stringSchema(),
-                        "confidence", numberSchema()),
-                List.of("title", "summary", "confidence"));
-    }
-
-    private Map<String, Object> translationResponseSchema() {
+    private Map<String, Object> publicationContentResponseSchema() {
         return objectSchema(
                 Map.of(
                         "title", stringSchema(),

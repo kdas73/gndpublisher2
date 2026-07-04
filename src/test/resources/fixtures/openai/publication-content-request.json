@@ -3,6 +3,11 @@
   "summary": "Greek lawmakers approved a new migration bill after a lengthy debate.",
   "sourceName": "ERT News",
   "sourceUrl": "https://example.gr/news/item",
+  "sourceLanguage": "el",
   "targetLanguage": "en",
-  "maxCharacters": 600
+  "semanticKey": "greek parliament approves new migration bill",
+  "primaryCategoryCode": "politics",
+  "categoryCodes": ["politics"],
+  "maxSummaryCharacters": 600,
+  "maxMessageCharacters": 3500
 }

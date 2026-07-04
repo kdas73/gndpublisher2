@@ -187,12 +187,10 @@ class ConfigurationPropertiesBindingTest {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("gnd.openai.api-key", apiKey);
         values.put("gnd.openai.models.categorization", "GPT5.5-mini");
-        values.put("gnd.openai.models.translation", "GPT-5.5");
-        values.put("gnd.openai.models.summary", "GPT-5.5");
+        values.put("gnd.openai.models.publication-content", "GPT-5.5");
         values.put("gnd.openai.prompts.classification-version", "classification-v1");
         values.put("gnd.openai.prompts.editorial-rules-version", "editorial-rules-v1");
-        values.put("gnd.openai.prompts.summary-version", "summary-v1");
-        values.put("gnd.openai.prompts.translation-version", "translation-v1");
+        values.put("gnd.openai.prompts.publication-content-version", "publication-content-v1");
         values.put("gnd.openai.timeouts.connect", "5s");
         values.put("gnd.openai.timeouts.read", "60s");
         values.put("gnd.openai.semantic-event-lookup-window", "3d");

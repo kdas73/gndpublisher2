@@ -137,10 +137,8 @@ Recommended fixture layout:
 src/test/resources/fixtures/openai/
   classification-request.json
   classification-response.json
-  summary-request.json
-  summary-response.json
-  translation-request.json
-  translation-response.json
+  publication-content-request.json
+  publication-content-response.json
 ```
 
 ## Configuration Guidelines

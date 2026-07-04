@@ -8,11 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.gnd.publisher.dto.openai.CategoryClassificationRequest;
 import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
+import com.gnd.publisher.dto.openai.PublicationContentRequest;
+import com.gnd.publisher.dto.openai.PublicationContentResponse;
 import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
-import com.gnd.publisher.dto.openai.SummaryRequest;
-import com.gnd.publisher.dto.openai.SummaryResponse;
-import com.gnd.publisher.dto.openai.TranslationRequest;
-import com.gnd.publisher.dto.openai.TranslationResponse;
 
 import org.junit.jupiter.api.Test;
 
@@ -32,20 +30,13 @@ class OpenAiJsonContractTest {
     }
 
     @Test
-    void deserializesSummaryFixtures() throws Exception {
-        SummaryRequest request = read("summary-request.json", SummaryRequest.class);
-        SummaryResponse response = read("summary-response.json", SummaryResponse.class);
-
-        assertThat(request.maxCharacters()).isEqualTo(600);
-        assertThat(response.confidence()).isEqualTo(0.9);
-    }
-
-    @Test
-    void deserializesTranslationFixtures() throws Exception {
-        TranslationRequest request = read("translation-request.json", TranslationRequest.class);
-        TranslationResponse response = read("translation-response.json", TranslationResponse.class);
+    void deserializesPublicationContentFixtures() throws Exception {
+        PublicationContentRequest request = read("publication-content-request.json", PublicationContentRequest.class);
+        PublicationContentResponse response = read("publication-content-response.json", PublicationContentResponse.class);
 
         assertThat(request.targetLanguage()).isEqualTo("en");
+        assertThat(request.semanticKey()).contains("migration bill");
+        assertThat(request.maxSummaryCharacters()).isEqualTo(600);
         assertThat(response.summary()).contains("parliamentary debate");
     }
 

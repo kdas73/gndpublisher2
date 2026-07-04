@@ -74,13 +74,11 @@ gnd:
     api-key: ${OPENAI_API_KEY:}
     models:
       categorization: GPT5.5-mini
-      translation: GPT-5.5
-      summary: GPT-5.5
+      publication-content: GPT-5.5
     prompts:
       classification-version: classification-v1
       editorial-rules-version: editorial-rules-v1
-      summary-version: summary-v1
-      translation-version: translation-v1
+      publication-content-version: publication-content-v1
     timeouts:
       connect: 5s
       read: 60s

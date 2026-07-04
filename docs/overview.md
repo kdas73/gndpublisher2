@@ -1,6 +1,6 @@
 # Project Overview
 
-GND Publisher collects news from Greek RSS feeds, stores them in a database, selects relevant items by category, translates selected news into configured languages, and publishes the translated messages to Telegram channels.
+GND Publisher collects news from Greek RSS feeds, stores them in a database, selects relevant items by category, prepares target-language publication content, and publishes messages to Telegram channels.
 
 ## Product Goal
 
@@ -12,8 +12,8 @@ The application should automate multilingual news publishing while preserving th
 2. Normalize feed items into a common internal news format.
 3. Store source-level new items in the database.
 4. Use OpenAI GPT5.5-mini to assign each item to an existing or new semantic event key and match it against configured categories.
-5. Use OpenAI GPT-5.5 to create a summary when needed and translate selected publishable events into configured target languages.
-6. Publish translated event messages to Telegram channels mapped by language.
+5. Use OpenAI GPT-5.5 to create or improve selected summaries and produce target-language publication content in one call.
+6. Publish target-language event messages to Telegram channels mapped by language.
 7. Include the original source in every Telegram message.
 
 ## Initial Domain Concepts
@@ -24,9 +24,9 @@ The application should automate multilingual news publishing while preserving th
 - Category: a project-defined grouping used to decide whether a news item should be processed.
 - Categorizer: OpenAI GPT5.5-mini model used to assign news items to project categories and semantic event keys.
 - Language: a target publication language.
-- Translation and summary provider: OpenAI GPT-5.5 model used for target-language translation and summary generation when needed.
+- Publication content provider: OpenAI GPT-5.5 model used to generate target-language titles and summaries for selected publishable events.
 - Telegram channel: a destination channel for one language or language/category combination.
-- Publication: a record that a translated news item was sent to a Telegram channel.
+- Publication: a record that a target-language news item was sent to a Telegram channel.
 
 ## Non-Goals For The First Version
 

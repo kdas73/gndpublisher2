@@ -1,4 +1,4 @@
-# 016 Observability And Error Handling
+# 015 Observability And Error Handling
 
 ## Goal
 

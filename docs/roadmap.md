@@ -13,14 +13,13 @@ This roadmap breaks the implementation into small, independently reviewable task
 7. [OpenAI Integration Foundation](tasks/007-openai-integration-foundation.md)
 8. [Classification And Semantic Events](tasks/008-classification-semantic-events.md)
 9. [Source Quota Selection](tasks/009-source-quota-selection.md)
-10. [Summary Generation](tasks/010-summary-generation.md)
-11. [Translation Generation](tasks/011-translation-generation.md)
-12. [Telegram Publishing](tasks/012-telegram-publishing.md)
-13. [Important News Digest](tasks/013-important-news-digest.md)
-14. [Cleanup Service](tasks/014-cleanup-service.md)
-15. [Docker And Deployment Skeleton](tasks/015-docker-deployment-skeleton.md)
-16. [Observability And Error Handling](tasks/016-observability-error-handling.md)
+10. [Publication Content Generation](tasks/010-publication-content-generation.md)
+11. [Telegram Publishing](tasks/011-telegram-publishing.md)
+12. [Important News Digest](tasks/012-important-news-digest.md)
+13. [Cleanup Service](tasks/013-cleanup-service.md)
+14. [Docker And Deployment Skeleton](tasks/014-docker-deployment-skeleton.md)
+15. [Observability And Error Handling](tasks/015-observability-error-handling.md)
 
 ## Suggested Order
 
-Start with tasks 1-2 to create the project and testing foundation. Then implement configuration and database baseline in tasks 3-4. Implement the ingestion path through task 9 before adding summary, translation, and Telegram publishing. Tasks 15-16 can be expanded as soon as the first application slices exist.
+Start with tasks 1-2 to create the project and testing foundation. Then implement configuration and database baseline in tasks 3-4. Implement the ingestion path through task 9 before adding publication content generation and Telegram publishing. Task 15 can be expanded as soon as the first application slices exist.

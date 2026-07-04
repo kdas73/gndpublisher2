@@ -11,9 +11,8 @@ GND Publisher is a Spring Boot service organized around a scheduled news process
 - Persistence: stores sources, news items, semantic events, categories, translations, classification runs, and publication records.
 - Categorization: uses OpenAI GPT5.5-mini to select publication categories and semantic event keys.
 - Source quota selection: limits how many publishable items from one RSS source can continue in each run.
-- Summary generation: uses OpenAI GPT-5.5 when the RSS item needs a better publication summary.
-- Translation: uses OpenAI GPT-5.5 to translate selected news items into target languages.
-- Telegram publishing: sends translated messages to Telegram channels.
+- Publication content generation: uses OpenAI GPT-5.5 to create or improve selected summaries and produce target-language publication content in one call.
+- Telegram publishing: sends target-language publication messages to Telegram channels.
 - Important news digest publishing: periodically publishes a post with links to already published events that are important because they are covered by more than the configured number of semantic duplicates.
 - Cleanup: deletes or archives records older than the configured retention period.
 - Configuration: defines all possible categories, publishable categories, free-form editorial classification rules, per-run source publication limits, important news digest settings, target languages, Telegram routing, OpenAI settings, and provider credentials. RSS source links are stored only in the database.
@@ -30,9 +29,9 @@ GND Publisher is a Spring Boot service organized around a scheduled news process
 7. The news item is linked to the matching or newly created semantic event.
 8. Source quota selection keeps only a configured number of publishable candidates per RSS source for the current run.
 9. Items not selected by the source quota are marked with `rejection_reason = SOURCE_RUN_QUOTA_EXCEEDED`.
-10. OpenAI GPT-5.5 generates or improves a summary when needed for selected candidates.
-11. OpenAI GPT-5.5 produces language-specific translated message content for selected publishable semantic events.
-12. Telegram publishing sends each translated event to the configured channel for that language.
+10. OpenAI GPT-5.5 produces language-specific publication content for selected publishable semantic events, using classification context such as semantic key and category codes.
+11. The publication content response contains the target-language title and summary.
+12. Telegram publishing sends each target-language event to the configured channel for that language.
 13. Publication results are stored at semantic event level to prevent duplicate sends and support troubleshooting.
 
 ## Important News Digest Pipeline
@@ -52,20 +51,20 @@ Rules:
 - The importance threshold must be configurable. Default threshold: `2`.
 - With threshold `2`, an event qualifies when it has more than two linked source news items.
 - Digest selection should use semantic events and publication records, not raw RSS items alone.
-- Digest posts must not trigger OpenAI summary or translation.
+- Digest posts must not trigger OpenAI publication content generation.
 - Digest posts must be idempotent per target language, Telegram channel, and semantic event.
 - Telegram publication records must contain enough data to build links to published posts.
 
 ## Source Quota Selection
 
-Each processing run must limit how many publishable news items from one RSS source can continue to summary, translation, and publication.
+Each processing run must limit how many publishable news items from one RSS source can continue to publication content generation and Telegram publication.
 
 Rules:
 
 - The default max items per source per run must be configurable.
 - Per-source overrides may be configured when some feeds need stricter or looser limits.
 - Quota selection runs after source deduplication, semantic event grouping, and categorization.
-- Quota selection runs before summary generation, translation, and Telegram publishing.
+- Quota selection runs before publication content generation and Telegram publishing.
 - Candidates are selected only from items with publishable categories and `shouldPublish = true`.
 - Candidates should be sorted by category `publication_priority`, then `published_at` descending, then classification confidence descending.
 - Items rejected only because of source quota are not semantically irrelevant; they must be marked with `rejection_reason = SOURCE_RUN_QUOTA_EXCEEDED`.
@@ -174,10 +173,8 @@ com.gnd.publisher
       CategoryClassificationRequest.java
       CategoryClassificationResponse.java
       SemanticEventKeyCandidateDto.java
-      TranslationRequest.java
-      TranslationResponse.java
-      SummaryRequest.java
-      SummaryResponse.java
+      PublicationContentRequest.java
+      PublicationContentResponse.java
     telegram
       TelegramMessageDto.java
     api
@@ -201,8 +198,7 @@ com.gnd.publisher
     SemanticEventGroupingService.java
     CategorizationService.java
     SourceQuotaSelectionService.java
-    SummaryService.java
-    TranslationService.java
+    PublicationContentService.java
     PublicationService.java
     ImportantNewsDigestService.java
     TelegramRoutingService.java
@@ -215,15 +211,14 @@ com.gnd.publisher
     openai
       OpenAiClient.java
       OpenAiCategorizer.java
-      OpenAiTranslator.java
-      OpenAiSummarizer.java
+      OpenAiPublicationContentGenerator.java
     telegram
       TelegramBotClient.java
 
   mapper
     NewsItemMapper.java
     SemanticNewsEventMapper.java
-    TranslationMapper.java
+    PublicationContentMapper.java
     TelegramMessageMapper.java
     ImportantNewsDigestMessageMapper.java
 
@@ -243,7 +238,7 @@ com.gnd.publisher
 
 - `config`: Spring configuration and typed properties for categories, editorial rules, publishing limits, scheduling, cleanup retention, OpenAI, Telegram, profiles, and database settings. RSS source URLs are not runtime properties; they are database records.
 - `scheduler`: scheduled entry points only. Scheduler classes should trigger services and should not contain business logic.
-- `service`: application business logic and orchestration: ingestion, source deduplication, semantic event grouping, categorization, source quota selection, summary generation, translation, routing, publication, important news digest publishing, and cleanup.
+- `service`: application business logic and orchestration: ingestion, source deduplication, semantic event grouping, categorization, source quota selection, publication content generation, routing, publication, important news digest publishing, and cleanup.
 - `integration`: external system clients and adapters for RSS, OpenAI, and Telegram.
 - `repository`: database access through Spring Data repositories.
 - `domain.model`: persistent domain entities and core domain objects.
@@ -269,8 +264,7 @@ Do not add `controller` packages until the application needs a REST API, admin A
 ## OpenAI Usage
 
 - Categorization model: `GPT5.5-mini`.
-- Translation model: `GPT-5.5`.
-- Summary generation model: `GPT-5.5`.
+- Publication content generation model: `GPT-5.5`.
 - OpenAI prompt versions and model names should be configurable.
 - OpenAI prompt templates and editorial classification rules must be stored as text files under `src/main/resources/prompts/`.
 - OpenAI JSON request and response contracts are defined in `docs/openai.md`.
@@ -279,7 +273,7 @@ Do not add `controller` packages until the application needs a REST API, admin A
 - The application configuration must define the default max publishable items per source per run and may define per-source overrides.
 - The application configuration must define important news digest schedule, importance threshold, and destination channel routing.
 - Categorization output should be structured enough to map reliably to configured category codes and semantic event keys.
-- Translation and summary output should preserve source meaning; source attribution is added by Telegram message mapping from feed metadata.
+- Publication content output should preserve source meaning; source attribution is added by Telegram message mapping from feed metadata.
 
 ## Profiles
 
@@ -324,7 +318,7 @@ Liquibase is responsible for database initialization and schema updates.
 ## Error Handling
 
 - RSS source failures should not stop the whole processing run.
-- Translation failures should not mark a news item as published.
+- Publication content generation failures should not mark a news item as published.
 - Telegram API failures should be recorded and retried according to configured policy.
 - Cleanup failures should be logged and must not stop ingestion or publication schedulers.
 - External calls should have timeouts.

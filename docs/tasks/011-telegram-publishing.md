@@ -1,12 +1,12 @@
-# 012 Telegram Publishing
+# 011 Telegram Publishing
 
 ## Goal
 
-Publish translated semantic events to Telegram channels and store publication history.
+Publish target-language semantic event messages to Telegram channels and store publication history.
 
 ## Scope
 
-- Route translations to Telegram channels by target language.
+- Route publication content to Telegram channels by target language.
 - Build Telegram messages with source attribution.
 - Send messages through Telegram Bot API client.
 - Persist publication records.
@@ -29,6 +29,6 @@ Publish translated semantic events to Telegram channels and store publication hi
 
 ## Done When
 
-- Telegram messages are sent for selected translations.
+- Telegram messages are sent for selected target-language publication content.
 - Duplicate publication to the same language/channel pair is prevented.
 - Publication failures are persisted enough for troubleshooting.

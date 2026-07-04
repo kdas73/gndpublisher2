@@ -28,11 +28,9 @@ import com.gnd.publisher.dto.openai.CategoryClassificationRequest;
 import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
 import com.gnd.publisher.dto.openai.CategoryOptionDto;
 import com.gnd.publisher.dto.openai.OpenAiNewsItemDto;
+import com.gnd.publisher.dto.openai.PublicationContentRequest;
+import com.gnd.publisher.dto.openai.PublicationContentResponse;
 import com.gnd.publisher.dto.openai.SemanticEventKeyCandidateDto;
-import com.gnd.publisher.dto.openai.SummaryRequest;
-import com.gnd.publisher.dto.openai.SummaryResponse;
-import com.gnd.publisher.dto.openai.TranslationRequest;
-import com.gnd.publisher.dto.openai.TranslationResponse;
 import com.gnd.publisher.exception.OpenAiIntegrationException;
 
 import org.junit.jupiter.api.Test;
@@ -78,7 +76,7 @@ class HttpOpenAiClientTest {
     }
 
     @Test
-    void sendsSummaryRequestAndParsesOutputText() {
+    void sendsPublicationContentRequestAndParsesOutputText() {
         FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
                 {
                   "title": "Greek parliament approves new migration bill",
@@ -88,28 +86,16 @@ class HttpOpenAiClientTest {
                 """));
         HttpOpenAiClient client = client(sender);
 
-        SummaryResponse response = client.summarize(summaryRequest());
+        PublicationContentResponse response = client.preparePublicationContent(publicationContentRequest());
 
         assertThat(response.summary()).contains("migration bill");
         assertThat(sender.lastRequest()).satisfies(request ->
-                assertThat(requestBody(request)).contains("publication summaries", "GPT-5.5"));
-    }
-
-    @Test
-    void sendsTranslationRequestAndParsesOutputText() {
-        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
-                {
-                  "title": "Greek parliament approves new migration bill",
-                  "summary": "Greek lawmakers approved a new migration bill after debate.",
-                  "confidence": 0.92
-                }
-                """));
-        HttpOpenAiClient client = client(sender);
-
-        TranslationResponse response = client.translate(translationRequest());
-
-        assertThat(response.summary()).contains("migration bill");
-        assertThat(requestBody(sender.lastRequest())).contains("translate publishable news", "maxMessageCharacters");
+                assertThat(requestBody(request)).contains(
+                        "target-language publication content",
+                        "GPT-5.5",
+                        "semanticKey",
+                        "maxSummaryCharacters",
+                        "maxMessageCharacters"));
     }
 
     @Test
@@ -117,7 +103,7 @@ class HttpOpenAiClientTest {
         FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(new FakeHttpResponse(429, "{}"));
         HttpOpenAiClient client = client(sender);
 
-        assertThatThrownBy(() -> client.summarize(summaryRequest()))
+        assertThatThrownBy(() -> client.preparePublicationContent(publicationContentRequest()))
                 .isInstanceOf(OpenAiIntegrationException.class)
                 .hasMessageContaining("HTTP status 429");
     }
@@ -127,7 +113,7 @@ class HttpOpenAiClientTest {
         FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(new FakeHttpResponse(200, "{\"output\": []}"));
         HttpOpenAiClient client = client(sender);
 
-        assertThatThrownBy(() -> client.summarize(summaryRequest()))
+        assertThatThrownBy(() -> client.preparePublicationContent(publicationContentRequest()))
                 .isInstanceOf(OpenAiIntegrationException.class)
                 .hasMessageContaining("output_text");
     }
@@ -160,12 +146,11 @@ class HttpOpenAiClientTest {
     private OpenAiProperties properties() {
         return new OpenAiProperties(
                 "test-api-key",
-                new OpenAiProperties.Models("GPT5.5-mini", "GPT-5.5", "GPT-5.5"),
+                new OpenAiProperties.Models("GPT5.5-mini", "GPT-5.5"),
                 new OpenAiProperties.Prompts(
                         "classification-v1",
                         "editorial-rules-v1",
-                        "summary-v1",
-                        "translation-v1"),
+                        "publication-content-v1"),
                 new OpenAiProperties.Timeouts(Duration.ofSeconds(5), Duration.ofSeconds(60)),
                 Duration.ofDays(3));
     }
@@ -192,24 +177,18 @@ class HttpOpenAiClientTest {
                         "greek parliament debates migration bill")));
     }
 
-    private SummaryRequest summaryRequest() {
-        return new SummaryRequest(
-                "Greek parliament approves new migration bill",
-                "Greek lawmakers approved a new migration bill after a lengthy debate.",
-                "ERT News",
-                "https://example.gr/news/item",
-                "en",
-                600);
-    }
-
-    private TranslationRequest translationRequest() {
-        return new TranslationRequest(
+    private PublicationContentRequest publicationContentRequest() {
+        return new PublicationContentRequest(
                 "Greek parliament approves new migration bill",
                 "Greek lawmakers approved a new migration bill after a lengthy parliamentary debate.",
                 "ERT News",
                 "https://example.gr/news/item",
                 "el",
                 "en",
+                "greek parliament approves new migration bill",
+                "politics",
+                List.of("politics"),
+                600,
                 3500);
     }
 

@@ -14,8 +14,7 @@ class PromptLoaderTest {
     @Test
     void loadsPromptTemplatesFromResources() {
         assertThat(promptLoader.load("classification-v1")).contains("classify Greek news items");
-        assertThat(promptLoader.load("summary-v1")).contains("publication summaries");
-        assertThat(promptLoader.load("translation-v1")).contains("translate publishable news");
+        assertThat(promptLoader.load("publication-content-v1")).contains("target-language publication content");
     }
 
     @Test
