@@ -27,6 +27,7 @@ public class FeedIngestionService {
     private final RssSourceRepository rssSourceRepository;
     private final NewsItemRepository newsItemRepository;
     private final SourceDeduplicationService sourceDeduplicationService;
+    private final CategorizationService categorizationService;
     private final RssClient rssClient;
     private final RssFeedParser rssFeedParser;
     private final Clock clock;
@@ -36,21 +37,31 @@ public class FeedIngestionService {
             RssSourceRepository rssSourceRepository,
             NewsItemRepository newsItemRepository,
             SourceDeduplicationService sourceDeduplicationService,
+            CategorizationService categorizationService,
             RssClient rssClient,
             RssFeedParser rssFeedParser) {
-        this(rssSourceRepository, newsItemRepository, sourceDeduplicationService, rssClient, rssFeedParser, Clock.systemUTC());
+        this(
+                rssSourceRepository,
+                newsItemRepository,
+                sourceDeduplicationService,
+                categorizationService,
+                rssClient,
+                rssFeedParser,
+                Clock.systemUTC());
     }
 
     FeedIngestionService(
             RssSourceRepository rssSourceRepository,
             NewsItemRepository newsItemRepository,
             SourceDeduplicationService sourceDeduplicationService,
+            CategorizationService categorizationService,
             RssClient rssClient,
             RssFeedParser rssFeedParser,
             Clock clock) {
         this.rssSourceRepository = rssSourceRepository;
         this.newsItemRepository = newsItemRepository;
         this.sourceDeduplicationService = sourceDeduplicationService;
+        this.categorizationService = categorizationService;
         this.rssClient = rssClient;
         this.rssFeedParser = rssFeedParser;
         this.clock = clock;
@@ -75,7 +86,8 @@ public class FeedIngestionService {
                 return;
             }
 
-            newsItemRepository.saveAll(newsItems);
+            List<NewsItem> savedNewsItems = newsItemRepository.saveAll(newsItems);
+            categorizationService.classifyNewItems(savedNewsItems);
             LOGGER.info(
                     "Ingested {} new RSS items from source {}; skipped {} duplicates",
                     newsItems.size(),

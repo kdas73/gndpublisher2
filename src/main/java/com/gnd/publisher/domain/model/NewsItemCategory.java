@@ -43,4 +43,57 @@ public class NewsItemCategory {
 
     protected NewsItemCategory() {
     }
+
+    private NewsItemCategory(
+            NewsItem newsItem,
+            Category category,
+            String matchedBy,
+            String model,
+            BigDecimal confidence,
+            Instant createdAt) {
+        this.id = new NewsItemCategoryId(newsItem.getId(), category.getId());
+        this.newsItem = newsItem;
+        this.category = category;
+        this.matchedBy = matchedBy;
+        this.model = model;
+        this.confidence = confidence;
+        this.createdAt = createdAt;
+    }
+
+    public static NewsItemCategory classifierMatch(
+            NewsItem newsItem,
+            Category category,
+            String model,
+            BigDecimal confidence,
+            Instant createdAt) {
+        return new NewsItemCategory(newsItem, category, "OPENAI", model, confidence, createdAt);
+    }
+
+    public NewsItemCategoryId getId() {
+        return id;
+    }
+
+    public NewsItem getNewsItem() {
+        return newsItem;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public String getMatchedBy() {
+        return matchedBy;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public BigDecimal getConfidence() {
+        return confidence;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

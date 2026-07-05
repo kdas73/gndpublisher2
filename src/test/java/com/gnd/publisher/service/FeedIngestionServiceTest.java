@@ -43,6 +43,9 @@ class FeedIngestionServiceTest {
     private SourceDeduplicationService sourceDeduplicationService;
 
     @Mock
+    private CategorizationService categorizationService;
+
+    @Mock
     private RssClient rssClient;
 
     @Mock
@@ -63,6 +66,7 @@ class FeedIngestionServiceTest {
         NewsItem deduplicatedNewsItem = NewsItem.fromRssFeedItem(source, feedItem, NOW);
         when(sourceDeduplicationService.newItemsForSource(source, List.of(feedItem), NOW))
                 .thenReturn(List.of(deduplicatedNewsItem));
+        when(newsItemRepository.saveAll(List.of(deduplicatedNewsItem))).thenReturn(List.of(deduplicatedNewsItem));
 
         service().ingestEnabledSources();
 
@@ -83,6 +87,7 @@ class FeedIngestionServiceTest {
             assertThat(newsItem.isSelectedForPublication()).isFalse();
             assertThat(newsItem.getRejectionReason()).isNull();
         });
+        verify(categorizationService).classifyNewItems(List.of(deduplicatedNewsItem));
     }
 
     @Test
@@ -102,6 +107,7 @@ class FeedIngestionServiceTest {
         service().ingestEnabledSources();
 
         verify(newsItemRepository, never()).saveAll(any());
+        verify(categorizationService, never()).classifyNewItems(any());
     }
 
     @Test
@@ -118,14 +124,17 @@ class FeedIngestionServiceTest {
                 Optional.empty(),
                 Optional.empty());
         when(rssFeedParser.parse("<rss />")).thenReturn(List.of(healthyFeedItem));
+        NewsItem healthyNewsItem = NewsItem.fromRssFeedItem(healthySource, healthyFeedItem, NOW);
         when(sourceDeduplicationService.newItemsForSource(healthySource, List.of(healthyFeedItem), NOW))
-                .thenReturn(List.of(NewsItem.fromRssFeedItem(healthySource, healthyFeedItem, NOW)));
+                .thenReturn(List.of(healthyNewsItem));
+        when(newsItemRepository.saveAll(List.of(healthyNewsItem))).thenReturn(List.of(healthyNewsItem));
 
         service().ingestEnabledSources();
 
         verify(rssClient).fetch(URI.create(failingSource.getUrl()));
         verify(rssClient).fetch(URI.create(healthySource.getUrl()));
         verify(newsItemRepository).saveAll(any());
+        verify(categorizationService).classifyNewItems(List.of(healthyNewsItem));
     }
 
     @Test
@@ -135,6 +144,7 @@ class FeedIngestionServiceTest {
         service().ingestEnabledSources();
 
         verify(newsItemRepository, never()).saveAll(any());
+        verify(categorizationService, never()).classifyNewItems(any());
     }
 
     private FeedIngestionService service() {
@@ -142,6 +152,7 @@ class FeedIngestionServiceTest {
                 rssSourceRepository,
                 newsItemRepository,
                 sourceDeduplicationService,
+                categorizationService,
                 rssClient,
                 rssFeedParser,
                 Clock.fixed(NOW, ZoneOffset.UTC));

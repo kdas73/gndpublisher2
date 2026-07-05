@@ -6,4 +6,6 @@ import com.gnd.publisher.domain.model.NewsItemCategoryId;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NewsItemCategoryRepository extends JpaRepository<NewsItemCategory, NewsItemCategoryId> {
+
+    void deleteByNewsItem_Id(Long newsItemId);
 }

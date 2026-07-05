@@ -39,7 +39,49 @@ public class SemanticNewsEvent extends AuditableEntity {
     protected SemanticNewsEvent() {
     }
 
+    private SemanticNewsEvent(String semanticKey, Category category, Instant seenAt) {
+        this.semanticKey = semanticKey;
+        this.category = category;
+        this.firstSeenAt = seenAt;
+        this.lastSeenAt = seenAt;
+        this.status = "ACTIVE";
+    }
+
+    public static SemanticNewsEvent create(String semanticKey, Category category, Instant seenAt) {
+        return new SemanticNewsEvent(semanticKey, category, seenAt);
+    }
+
+    public void markSeen(Instant seenAt) {
+        this.lastSeenAt = seenAt;
+    }
+
+    public void setCategoryIfMissing(Category category) {
+        if (this.category == null) {
+            this.category = category;
+        }
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public String getSemanticKey() {
+        return semanticKey;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public Instant getFirstSeenAt() {
+        return firstSeenAt;
+    }
+
+    public Instant getLastSeenAt() {
+        return lastSeenAt;
+    }
+
+    public String getStatus() {
+        return status;
     }
 }

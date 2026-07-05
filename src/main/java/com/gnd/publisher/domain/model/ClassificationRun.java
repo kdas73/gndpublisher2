@@ -77,7 +77,126 @@ public class ClassificationRun {
     protected ClassificationRun() {
     }
 
+    private ClassificationRun(
+            NewsItem newsItem,
+            SemanticNewsEvent semanticEvent,
+            String model,
+            int inputKeysCount,
+            Instant lookupWindowStartedAt,
+            Instant lookupWindowEndedAt,
+            String editorialRulesVersion,
+            String returnedSemanticKey,
+            SemanticKeyAction semanticKeyAction,
+            SemanticNewsEvent matchedSemanticEvent,
+            Category category,
+            BigDecimal confidence,
+            String rawResponse,
+            Instant createdAt) {
+        this.newsItem = newsItem;
+        this.semanticEvent = semanticEvent;
+        this.model = model;
+        this.inputKeysCount = inputKeysCount;
+        this.lookupWindowStartedAt = lookupWindowStartedAt;
+        this.lookupWindowEndedAt = lookupWindowEndedAt;
+        this.editorialRulesVersion = editorialRulesVersion;
+        this.returnedSemanticKey = returnedSemanticKey;
+        this.semanticKeyAction = semanticKeyAction;
+        this.matchedSemanticEvent = matchedSemanticEvent;
+        this.category = category;
+        this.confidence = confidence;
+        this.rawResponse = rawResponse;
+        this.createdAt = createdAt;
+    }
+
+    public static ClassificationRun recordDecision(
+            NewsItem newsItem,
+            SemanticNewsEvent semanticEvent,
+            String model,
+            int inputKeysCount,
+            Instant lookupWindowStartedAt,
+            Instant lookupWindowEndedAt,
+            String editorialRulesVersion,
+            String returnedSemanticKey,
+            SemanticKeyAction semanticKeyAction,
+            SemanticNewsEvent matchedSemanticEvent,
+            Category category,
+            BigDecimal confidence,
+            String rawResponse,
+            Instant createdAt) {
+        return new ClassificationRun(
+                newsItem,
+                semanticEvent,
+                model,
+                inputKeysCount,
+                lookupWindowStartedAt,
+                lookupWindowEndedAt,
+                editorialRulesVersion,
+                returnedSemanticKey,
+                semanticKeyAction,
+                matchedSemanticEvent,
+                category,
+                confidence,
+                rawResponse,
+                createdAt);
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public NewsItem getNewsItem() {
+        return newsItem;
+    }
+
+    public SemanticNewsEvent getSemanticEvent() {
+        return semanticEvent;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public int getInputKeysCount() {
+        return inputKeysCount;
+    }
+
+    public Instant getLookupWindowStartedAt() {
+        return lookupWindowStartedAt;
+    }
+
+    public Instant getLookupWindowEndedAt() {
+        return lookupWindowEndedAt;
+    }
+
+    public String getEditorialRulesVersion() {
+        return editorialRulesVersion;
+    }
+
+    public String getReturnedSemanticKey() {
+        return returnedSemanticKey;
+    }
+
+    public SemanticKeyAction getSemanticKeyAction() {
+        return semanticKeyAction;
+    }
+
+    public SemanticNewsEvent getMatchedSemanticEvent() {
+        return matchedSemanticEvent;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public BigDecimal getConfidence() {
+        return confidence;
+    }
+
+    public String getRawResponse() {
+        return rawResponse;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 }

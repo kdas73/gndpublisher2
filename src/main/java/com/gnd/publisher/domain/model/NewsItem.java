@@ -135,6 +135,31 @@ public class NewsItem extends AuditableEntity {
                 source.getLanguage());
     }
 
+    public void markClassified(
+            SemanticNewsEvent semanticEvent,
+            BigDecimal confidence,
+            boolean publicationCandidate,
+            RejectionReason rejectionReason,
+            Instant classifiedAt) {
+        this.semanticEvent = semanticEvent;
+        this.classificationConfidence = confidence;
+        this.classifiedAt = classifiedAt;
+        this.publicationCandidate = publicationCandidate;
+        this.selectedForPublication = false;
+        this.rejectionReason = rejectionReason;
+        this.classificationStatus = publicationCandidate
+                ? ClassificationStatus.CLASSIFIED
+                : ClassificationStatus.REJECTED;
+    }
+
+    public void markClassificationFailed(Instant classifiedAt) {
+        this.classificationStatus = ClassificationStatus.FAILED;
+        this.classifiedAt = classifiedAt;
+        this.publicationCandidate = false;
+        this.selectedForPublication = false;
+        this.rejectionReason = RejectionReason.CLASSIFICATION_FAILED;
+    }
+
     public Long getId() {
         return id;
     }
@@ -171,8 +196,24 @@ public class NewsItem extends AuditableEntity {
         return originalLanguage;
     }
 
+    public SemanticNewsEvent getSemanticEvent() {
+        return semanticEvent;
+    }
+
     public ClassificationStatus getClassificationStatus() {
         return classificationStatus;
+    }
+
+    public BigDecimal getClassificationConfidence() {
+        return classificationConfidence;
+    }
+
+    public Instant getClassifiedAt() {
+        return classifiedAt;
+    }
+
+    public String getProcessingRunId() {
+        return processingRunId;
     }
 
     public boolean isPublicationCandidate() {

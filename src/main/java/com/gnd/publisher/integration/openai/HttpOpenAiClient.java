@@ -45,32 +45,34 @@ public class HttpOpenAiClient implements OpenAiClient {
     }
 
     @Override
-    public CategoryClassificationResponse classify(CategoryClassificationRequest request) {
-        CategoryClassificationResponse response = execute(
+    public ClassificationResult classify(CategoryClassificationRequest request) {
+        OpenAiParsedResponse<CategoryClassificationResponse> parsedResponse = execute(
                 properties.models().categorization(),
                 properties.prompts().classificationVersion(),
                 "category_classification_response",
                 classificationResponseSchema(),
                 request,
                 CategoryClassificationResponse.class);
+        CategoryClassificationResponse response = parsedResponse.value();
         validator.validateClassification(request, response);
-        return response;
+        return new ClassificationResult(response, parsedResponse.rawResponse(), properties.models().categorization());
     }
 
     @Override
     public PublicationContentResponse preparePublicationContent(PublicationContentRequest request) {
-        PublicationContentResponse response = execute(
+        OpenAiParsedResponse<PublicationContentResponse> parsedResponse = execute(
                 properties.models().publicationContent(),
                 properties.prompts().publicationContentVersion(),
                 "publication_content_response",
                 publicationContentResponseSchema(),
                 request,
                 PublicationContentResponse.class);
+        PublicationContentResponse response = parsedResponse.value();
         validator.validatePublicationContent(response);
         return response;
     }
 
-    private <T> T execute(
+    private <T> OpenAiParsedResponse<T> execute(
             String model,
             String promptVersion,
             String schemaName,
@@ -96,7 +98,7 @@ public class HttpOpenAiClient implements OpenAiClient {
 
         String outputText = extractOutputText(httpResponse.body());
         try {
-            return objectMapper.readValue(outputText, responseType);
+            return new OpenAiParsedResponse<>(objectMapper.readValue(outputText, responseType), outputText);
         } catch (JsonProcessingException exception) {
             throw new OpenAiIntegrationException("Failed to parse OpenAI output as " + responseType.getSimpleName(),
                     exception);
@@ -248,5 +250,10 @@ public class HttpOpenAiClient implements OpenAiClient {
                 "type", "number",
                 "minimum", 0.0,
                 "maximum", 1.0);
+    }
+
+    private record OpenAiParsedResponse<T>(
+            T value,
+            String rawResponse) {
     }
 }

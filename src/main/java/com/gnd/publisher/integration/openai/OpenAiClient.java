@@ -7,7 +7,13 @@ import com.gnd.publisher.dto.openai.PublicationContentResponse;
 
 public interface OpenAiClient {
 
-    CategoryClassificationResponse classify(CategoryClassificationRequest request);
+    ClassificationResult classify(CategoryClassificationRequest request);
 
     PublicationContentResponse preparePublicationContent(PublicationContentRequest request);
+
+    record ClassificationResult(
+            CategoryClassificationResponse response,
+            String rawResponse,
+            String model) {
+    }
 }

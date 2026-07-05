@@ -36,7 +36,69 @@ public class Category {
     protected Category() {
     }
 
+    private Category(
+            String code,
+            String name,
+            String description,
+            boolean enabled,
+            boolean publishable,
+            int publicationPriority) {
+        this.code = code;
+        this.name = name;
+        this.description = description;
+        this.enabled = enabled;
+        this.publishable = publishable;
+        this.publicationPriority = publicationPriority;
+    }
+
+    public static Category create(
+            String code,
+            String name,
+            String description,
+            boolean enabled,
+            boolean publishable,
+            int publicationPriority) {
+        return new Category(code, name, description, enabled, publishable, publicationPriority);
+    }
+
+    public void updateFromConfiguration(
+            String name,
+            String description,
+            boolean enabled,
+            boolean publishable,
+            int publicationPriority) {
+        this.name = name;
+        this.description = description;
+        this.enabled = enabled;
+        this.publishable = publishable;
+        this.publicationPriority = publicationPriority;
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public boolean isPublishable() {
+        return publishable;
+    }
+
+    public int getPublicationPriority() {
+        return publicationPriority;
     }
 }

@@ -57,9 +57,12 @@ class HttpOpenAiClientTest {
                 """));
         HttpOpenAiClient client = client(sender);
 
-        CategoryClassificationResponse response = client.classify(classificationRequest());
+        OpenAiClient.ClassificationResult result = client.classify(classificationRequest());
+        CategoryClassificationResponse response = result.response();
 
         assertThat(response.semanticKey()).isEqualTo("greek parliament approves new migration bill");
+        assertThat(result.rawResponse()).contains("\"semanticKey\"");
+        assertThat(result.model()).isEqualTo("GPT5.5-mini");
         HttpRequest request = sender.lastRequest();
         assertThat(request.uri()).isEqualTo(URI.create("https://api.openai.com/v1/responses"));
         assertThat(request.headers().firstValue("Authorization")).contains("Bearer test-api-key");
