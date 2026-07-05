@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import com.gnd.publisher.domain.model.NewsItem;
 import com.gnd.publisher.domain.model.RssSource;
@@ -28,6 +29,7 @@ public class FeedIngestionService {
     private final NewsItemRepository newsItemRepository;
     private final SourceDeduplicationService sourceDeduplicationService;
     private final CategorizationService categorizationService;
+    private final SourceQuotaSelectionService sourceQuotaSelectionService;
     private final RssClient rssClient;
     private final RssFeedParser rssFeedParser;
     private final Clock clock;
@@ -38,6 +40,7 @@ public class FeedIngestionService {
             NewsItemRepository newsItemRepository,
             SourceDeduplicationService sourceDeduplicationService,
             CategorizationService categorizationService,
+            SourceQuotaSelectionService sourceQuotaSelectionService,
             RssClient rssClient,
             RssFeedParser rssFeedParser) {
         this(
@@ -45,6 +48,7 @@ public class FeedIngestionService {
                 newsItemRepository,
                 sourceDeduplicationService,
                 categorizationService,
+                sourceQuotaSelectionService,
                 rssClient,
                 rssFeedParser,
                 Clock.systemUTC());
@@ -55,6 +59,7 @@ public class FeedIngestionService {
             NewsItemRepository newsItemRepository,
             SourceDeduplicationService sourceDeduplicationService,
             CategorizationService categorizationService,
+            SourceQuotaSelectionService sourceQuotaSelectionService,
             RssClient rssClient,
             RssFeedParser rssFeedParser,
             Clock clock) {
@@ -62,6 +67,7 @@ public class FeedIngestionService {
         this.newsItemRepository = newsItemRepository;
         this.sourceDeduplicationService = sourceDeduplicationService;
         this.categorizationService = categorizationService;
+        this.sourceQuotaSelectionService = sourceQuotaSelectionService;
         this.rssClient = rssClient;
         this.rssFeedParser = rssFeedParser;
         this.clock = clock;
@@ -70,11 +76,18 @@ public class FeedIngestionService {
     @Transactional
     public void ingestEnabledSources() {
         List<RssSource> sources = rssSourceRepository.findByEnabledTrue();
-        LOGGER.info("Starting RSS ingestion for {} enabled sources", sources.size());
-        sources.forEach(this::ingestSource);
+        if (sources.isEmpty()) {
+            LOGGER.info("No enabled RSS sources found for ingestion");
+            return;
+        }
+
+        String processingRunId = processingRunId();
+        LOGGER.info("Starting RSS ingestion run {} for {} enabled sources", processingRunId, sources.size());
+        sources.forEach(source -> ingestSource(source, processingRunId));
+        sourceQuotaSelectionService.selectForProcessingRun(processingRunId);
     }
 
-    private void ingestSource(RssSource source) {
+    private void ingestSource(RssSource source, String processingRunId) {
         try {
             String xml = rssClient.fetch(URI.create(source.getUrl()));
             List<RssFeedItemDto> feedItems = rssFeedParser.parse(xml);
@@ -86,6 +99,7 @@ public class FeedIngestionService {
                 return;
             }
 
+            newsItems.forEach(newsItem -> newsItem.assignProcessingRun(processingRunId));
             List<NewsItem> savedNewsItems = newsItemRepository.saveAll(newsItems);
             categorizationService.classifyNewItems(savedNewsItems);
             LOGGER.info(
@@ -96,5 +110,9 @@ public class FeedIngestionService {
         } catch (RuntimeException exception) {
             LOGGER.warn("Failed to ingest RSS source {} ({})", source.getName(), source.getUrl(), exception);
         }
+    }
+
+    private String processingRunId() {
+        return "ingestion-" + Instant.now(clock) + "-" + UUID.randomUUID().toString().substring(0, 8);
     }
 }

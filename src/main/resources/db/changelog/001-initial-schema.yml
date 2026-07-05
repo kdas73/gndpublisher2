@@ -23,6 +23,11 @@ databaseChangeLog:
                     primaryKey: true
                     nullable: false
               - column:
+                  name: code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
                   name: name
                   type: VARCHAR(255)
                   constraints:
@@ -694,6 +699,13 @@ databaseChangeLog:
                   constraints:
                     nullable: false
 
+        - createIndex:
+            tableName: rss_sources
+            indexName: uk_rss_sources_code
+            unique: true
+            columns:
+              - column:
+                  name: code
         - createIndex:
             tableName: rss_sources
             indexName: uk_rss_sources_url

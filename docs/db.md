@@ -30,6 +30,7 @@ Stores configured RSS feeds.
 Expected fields:
 
 - `id`
+- `code`
 - `name`
 - `url`
 - `language`
@@ -37,12 +38,13 @@ Expected fields:
 - `created_at`
 - `updated_at`
 
+`code` is a unique, stable source key used by application configuration such as per-source publication quota overrides.
 `url` is unique so baseline seed data and future source management cannot create duplicate source records for the same feed.
 
 Baseline seed sources:
 
-- Kathimerini: `https://feeds.feedburner.com/kathimerini/DJpy`
-- Ta Nea: `https://www.tanea.gr/feed/`
+- `kathimerini`: Kathimerini, `https://feeds.feedburner.com/kathimerini/DJpy`
+- `ta-nea`: Ta Nea, `https://www.tanea.gr/feed/`
 
 Both baseline sources are initialized with `language = el` and `enabled = true`.
 
@@ -81,6 +83,9 @@ Publication selection fields:
 - `publication_candidate`: true when the item is eligible after classification and category filtering.
 - `selected_for_publication`: true when the item survives per-source run quota selection.
 - `rejection_reason`: explains why an item did not continue to publication content generation and publication.
+
+Per-source publication quota overrides use `rss_sources.code` values as configuration keys.
+Items rejected only with `SOURCE_RUN_QUOTA_EXCEEDED` remain eligible for quota selection in later processing runs.
 
 Recommended `rejection_reason` values:
 

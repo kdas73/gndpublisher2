@@ -46,6 +46,9 @@ class FeedIngestionServiceTest {
     private CategorizationService categorizationService;
 
     @Mock
+    private SourceQuotaSelectionService sourceQuotaSelectionService;
+
+    @Mock
     private RssClient rssClient;
 
     @Mock
@@ -53,7 +56,12 @@ class FeedIngestionServiceTest {
 
     @Test
     void ingestsEnabledSourcesIntoPendingNewsItems() {
-        RssSource source = RssSource.create("Kathimerini", "https://feeds.example.test/kathimerini", "el", true);
+        RssSource source = RssSource.create(
+                "kathimerini",
+                "Kathimerini",
+                "https://feeds.example.test/kathimerini",
+                "el",
+                true);
         RssFeedItemDto feedItem = new RssFeedItemDto(
                 Optional.of("external-1"),
                 "Fixture title",
@@ -83,16 +91,23 @@ class FeedIngestionServiceTest {
             assertThat(newsItem.getFetchedAt()).isEqualTo(NOW);
             assertThat(newsItem.getOriginalLanguage()).isEqualTo("el");
             assertThat(newsItem.getClassificationStatus()).isEqualTo(ClassificationStatus.PENDING);
+            assertThat(newsItem.getProcessingRunId()).startsWith("ingestion-2026-07-01T12:00:00Z-");
             assertThat(newsItem.isPublicationCandidate()).isFalse();
             assertThat(newsItem.isSelectedForPublication()).isFalse();
             assertThat(newsItem.getRejectionReason()).isNull();
         });
         verify(categorizationService).classifyNewItems(List.of(deduplicatedNewsItem));
+        verify(sourceQuotaSelectionService).selectForProcessingRun(deduplicatedNewsItem.getProcessingRunId());
     }
 
     @Test
     void doesNotSaveWhenAllSourceItemsAreDuplicates() {
-        RssSource source = RssSource.create("Kathimerini", "https://feeds.example.test/kathimerini", "el", true);
+        RssSource source = RssSource.create(
+                "kathimerini",
+                "Kathimerini",
+                "https://feeds.example.test/kathimerini",
+                "el",
+                true);
         RssFeedItemDto feedItem = new RssFeedItemDto(
                 Optional.of("external-1"),
                 "Fixture title",
@@ -108,12 +123,23 @@ class FeedIngestionServiceTest {
 
         verify(newsItemRepository, never()).saveAll(any());
         verify(categorizationService, never()).classifyNewItems(any());
+        verify(sourceQuotaSelectionService).selectForProcessingRun(any());
     }
 
     @Test
     void continuesWithOtherSourcesWhenOneSourceFails() {
-        RssSource failingSource = RssSource.create("Broken", "https://feeds.example.test/broken", "el", true);
-        RssSource healthySource = RssSource.create("Healthy", "https://feeds.example.test/healthy", "el", true);
+        RssSource failingSource = RssSource.create(
+                "broken",
+                "Broken",
+                "https://feeds.example.test/broken",
+                "el",
+                true);
+        RssSource healthySource = RssSource.create(
+                "healthy",
+                "Healthy",
+                "https://feeds.example.test/healthy",
+                "el",
+                true);
         when(rssSourceRepository.findByEnabledTrue()).thenReturn(List.of(failingSource, healthySource));
         when(rssClient.fetch(URI.create(failingSource.getUrl()))).thenThrow(new IllegalStateException("boom"));
         when(rssClient.fetch(URI.create(healthySource.getUrl()))).thenReturn("<rss />");
@@ -135,6 +161,7 @@ class FeedIngestionServiceTest {
         verify(rssClient).fetch(URI.create(healthySource.getUrl()));
         verify(newsItemRepository).saveAll(any());
         verify(categorizationService).classifyNewItems(List.of(healthyNewsItem));
+        verify(sourceQuotaSelectionService).selectForProcessingRun(healthyNewsItem.getProcessingRunId());
     }
 
     @Test
@@ -145,6 +172,7 @@ class FeedIngestionServiceTest {
 
         verify(newsItemRepository, never()).saveAll(any());
         verify(categorizationService, never()).classifyNewItems(any());
+        verify(sourceQuotaSelectionService, never()).selectForProcessingRun(any());
     }
 
     private FeedIngestionService service() {
@@ -153,6 +181,7 @@ class FeedIngestionServiceTest {
                 newsItemRepository,
                 sourceDeduplicationService,
                 categorizationService,
+                sourceQuotaSelectionService,
                 rssClient,
                 rssFeedParser,
                 Clock.fixed(NOW, ZoneOffset.UTC));

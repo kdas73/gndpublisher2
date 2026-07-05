@@ -290,7 +290,7 @@ class CategorizationServiceTest {
     }
 
     private NewsItem newsItem(Long id) {
-        RssSource source = RssSource.create("ERT News", "https://feeds.example.test/ert", "el", true);
+        RssSource source = RssSource.create("ert-news", "ERT News", "https://feeds.example.test/ert", "el", true);
         ReflectionTestUtils.setField(source, "id", 10L);
         NewsItem newsItem = NewsItem.fromRssFeedItem(
                 source,

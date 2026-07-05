@@ -66,8 +66,11 @@ Rules:
 - Quota selection runs after source deduplication, semantic event grouping, and categorization.
 - Quota selection runs before publication content generation and Telegram publishing.
 - Candidates are selected only from items with publishable categories and `shouldPublish = true`.
-- Candidates should be sorted by category `publication_priority`, then `published_at` descending, then classification confidence descending.
+- Candidates include new items from the current processing run and earlier publishable items rejected only by source quota.
+- Candidates from the current processing run have priority over earlier quota backlog candidates.
+- Within current-run candidates and backlog candidates, sorting uses category `publication_priority`, then `published_at` descending, then classification confidence descending.
 - Items rejected only because of source quota are not semantically irrelevant; they must be marked with `rejection_reason = SOURCE_RUN_QUOTA_EXCEEDED`.
+- Items previously rejected only by source quota may be reconsidered in later runs; editorial, category, duplicate, low-confidence, and failed-classification rejections must not be revived by quota selection.
 - Use `processing_run_id` on `news_items` for lightweight traceability. Do not add a separate `processing_runs` table until operational audit, retries, or dashboards require it.
 
 ## Semantic Event Grouping

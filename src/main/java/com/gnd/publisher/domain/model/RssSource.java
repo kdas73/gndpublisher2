@@ -15,6 +15,9 @@ public class RssSource extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true, length = 100)
+    private String code;
+
     @Column(nullable = false)
     private String name;
 
@@ -30,19 +33,24 @@ public class RssSource extends AuditableEntity {
     protected RssSource() {
     }
 
-    private RssSource(String name, String url, String language, boolean enabled) {
+    private RssSource(String code, String name, String url, String language, boolean enabled) {
+        this.code = code;
         this.name = name;
         this.url = url;
         this.language = language;
         this.enabled = enabled;
     }
 
-    public static RssSource create(String name, String url, String language, boolean enabled) {
-        return new RssSource(name, url, language, enabled);
+    public static RssSource create(String code, String name, String url, String language, boolean enabled) {
+        return new RssSource(code, name, url, language, enabled);
     }
 
     public Long getId() {
         return id;
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public String getName() {

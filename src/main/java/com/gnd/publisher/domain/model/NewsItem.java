@@ -152,6 +152,20 @@ public class NewsItem extends AuditableEntity {
                 : ClassificationStatus.REJECTED;
     }
 
+    public void assignProcessingRun(String processingRunId) {
+        this.processingRunId = processingRunId;
+    }
+
+    public void markSelectedForPublication() {
+        this.selectedForPublication = true;
+        this.rejectionReason = null;
+    }
+
+    public void markRejectedBySourceQuota() {
+        this.selectedForPublication = false;
+        this.rejectionReason = RejectionReason.SOURCE_RUN_QUOTA_EXCEEDED;
+    }
+
     public void markClassificationFailed(Instant classifiedAt) {
         this.classificationStatus = ClassificationStatus.FAILED;
         this.classifiedAt = classifiedAt;

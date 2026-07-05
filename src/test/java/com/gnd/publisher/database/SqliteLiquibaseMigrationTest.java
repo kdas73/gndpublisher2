@@ -45,19 +45,22 @@ class SqliteLiquibaseMigrationTest {
             assertThat(indexExists(connection, "idx_news_items_run_source")).isTrue();
             assertThat(indexExists(connection, "idx_news_items_source_external_id")).isTrue();
             assertThat(indexExists(connection, "idx_news_items_source_url")).isTrue();
+            assertThat(indexExists(connection, "uk_rss_sources_code")).isTrue();
             assertThat(indexExists(connection, "uk_rss_sources_url")).isTrue();
             assertThat(indexExists(connection, "uk_publications_event_channel_language")).isTrue();
+            assertThat(columnExists(connection, "rss_sources", "code")).isTrue();
 
             assertThat(countRows(connection, "rss_sources")).isEqualTo(2);
             assertThat(countRows(
                     connection,
                     "rss_sources",
-                    "url = 'https://feeds.feedburner.com/kathimerini/DJpy' AND language = 'el' AND enabled = 1"))
+                    "code = 'kathimerini' AND url = 'https://feeds.feedburner.com/kathimerini/DJpy' "
+                            + "AND language = 'el' AND enabled = 1"))
                     .isEqualTo(1);
             assertThat(countRows(
                     connection,
                     "rss_sources",
-                    "url = 'https://www.tanea.gr/feed/' AND language = 'el' AND enabled = 1"))
+                    "code = 'ta-nea' AND url = 'https://www.tanea.gr/feed/' AND language = 'el' AND enabled = 1"))
                     .isEqualTo(1);
         }
     }
@@ -76,6 +79,18 @@ class SqliteLiquibaseMigrationTest {
 
     private static boolean indexExists(Connection connection, String indexName) throws Exception {
         return countRows(connection, "sqlite_master", "type = 'index' AND name = '" + indexName + "'") == 1;
+    }
+
+    private static boolean columnExists(Connection connection, String tableName, String columnName) throws Exception {
+        try (Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery("PRAGMA table_info(" + tableName + ")")) {
+            while (resultSet.next()) {
+                if (columnName.equals(resultSet.getString("name"))) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private static int countRows(Connection connection, String tableName) throws Exception {

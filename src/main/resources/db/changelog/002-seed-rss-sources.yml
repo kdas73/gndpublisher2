@@ -7,6 +7,9 @@ databaseChangeLog:
             tableName: rss_sources
             columns:
               - column:
+                  name: code
+                  value: kathimerini
+              - column:
                   name: name
                   value: Kathimerini
               - column:
@@ -27,6 +30,9 @@ databaseChangeLog:
         - insert:
             tableName: rss_sources
             columns:
+              - column:
+                  name: code
+                  value: ta-nea
               - column:
                   name: name
                   value: Ta Nea

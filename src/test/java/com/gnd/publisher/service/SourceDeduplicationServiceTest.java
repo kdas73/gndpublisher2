@@ -112,7 +112,7 @@ class SourceDeduplicationServiceTest {
     }
 
     private RssSource source(String name) {
-        return RssSource.create(name, "https://feeds.example.test/source", "el", true);
+        return RssSource.create(name.toLowerCase().replace(" ", "-"), name, "https://feeds.example.test/source", "el", true);
     }
 
     private RssFeedItemDto feedItem(Optional<String> externalId, Optional<String> link) {
