@@ -46,7 +46,63 @@ public class Translation extends AuditableEntity {
     protected Translation() {
     }
 
+    private Translation(
+            SemanticNewsEvent semanticEvent,
+            NewsItem newsItem,
+            String targetLanguage,
+            String title,
+            String summary,
+            String provider,
+            String model) {
+        this.semanticEvent = semanticEvent;
+        this.newsItem = newsItem;
+        this.targetLanguage = targetLanguage;
+        this.title = title;
+        this.summary = summary;
+        this.provider = provider;
+        this.model = model;
+    }
+
+    public static Translation publicationContent(
+            SemanticNewsEvent semanticEvent,
+            NewsItem newsItem,
+            String targetLanguage,
+            String title,
+            String summary,
+            String provider,
+            String model) {
+        return new Translation(semanticEvent, newsItem, targetLanguage, title, summary, provider, model);
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public SemanticNewsEvent getSemanticEvent() {
+        return semanticEvent;
+    }
+
+    public NewsItem getNewsItem() {
+        return newsItem;
+    }
+
+    public String getTargetLanguage() {
+        return targetLanguage;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getModel() {
+        return model;
     }
 }

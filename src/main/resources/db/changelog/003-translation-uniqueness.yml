@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-translation-uniqueness
+      author: codex
+      changes:
+        - createIndex:
+            tableName: translations
+            indexName: uk_translations_event_language
+            unique: true
+            columns:
+              - column:
+                  name: semantic_event_id
+              - column:
+                  name: target_language

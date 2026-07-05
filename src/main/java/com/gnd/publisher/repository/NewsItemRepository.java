@@ -7,6 +7,7 @@ import com.gnd.publisher.domain.model.NewsItem;
 import com.gnd.publisher.domain.model.RssSource;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,6 +18,10 @@ public interface NewsItemRepository extends JpaRepository<NewsItem, Long> {
     boolean existsBySourceAndSourceUrl(RssSource source, String sourceUrl);
 
     List<NewsItem> findByClassificationStatus(ClassificationStatus classificationStatus);
+
+    @EntityGraph(attributePaths = {"source", "semanticEvent", "semanticEvent.category"})
+    @Query("select item from NewsItem item where item.id = :id")
+    java.util.Optional<NewsItem> findPublicationContentContextById(@Param("id") Long id);
 
     @Query("""
             select new com.gnd.publisher.repository.SourceQuotaCandidate(item, source.code, category.publicationPriority)

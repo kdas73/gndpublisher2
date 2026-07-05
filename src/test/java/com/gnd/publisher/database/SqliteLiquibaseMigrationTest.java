@@ -47,6 +47,7 @@ class SqliteLiquibaseMigrationTest {
             assertThat(indexExists(connection, "idx_news_items_source_url")).isTrue();
             assertThat(indexExists(connection, "uk_rss_sources_code")).isTrue();
             assertThat(indexExists(connection, "uk_rss_sources_url")).isTrue();
+            assertThat(indexExists(connection, "uk_translations_event_language")).isTrue();
             assertThat(indexExists(connection, "uk_publications_event_channel_language")).isTrue();
             assertThat(columnExists(connection, "rss_sources", "code")).isTrue();
 

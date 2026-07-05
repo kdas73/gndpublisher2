@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/001-initial-schema.yml
   - include:
       file: db/changelog/002-seed-rss-sources.yml
+  - include:
+      file: db/changelog/003-translation-uniqueness.yml

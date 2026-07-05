@@ -181,6 +181,12 @@ Expected fields:
 - `created_at`
 - `updated_at`
 
+There must be at most one reusable translation for each semantic event and target language:
+
+```text
+unique(semantic_event_id, target_language)
+```
+
 ### news_summaries
 
 Stores generated or improved source-language summaries if the application later needs a canonical summary separate from target-language publication content. The current OpenAI publication content flow writes target-language title and summary to `translations`.
@@ -295,7 +301,7 @@ for digest inclusion.
 - `news_items(source_id, source_url)`
 - `classification_runs(news_item_id)`
 - `classification_runs(created_at)`
-- `translations(semantic_event_id, target_language)`
+- `translations(semantic_event_id, target_language)` unique
 - `publications(semantic_event_id, telegram_channel_id, target_language)`
 - `publications(telegram_message_url)`
 - `important_news_digest_posts(telegram_channel_id, target_language, published_at)`
