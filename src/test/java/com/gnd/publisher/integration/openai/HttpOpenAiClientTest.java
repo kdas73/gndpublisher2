@@ -145,6 +145,28 @@ class HttpOpenAiClientTest {
     }
 
     @Test
+    void disablesPublishingWhenModelPublishesWithoutPublishableCategory() {
+        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
+                {
+                  "primaryCategoryCode": "politics",
+                  "categoryCodes": ["politics"],
+                  "semanticKey": "greek parliament approves new migration bill",
+                  "semanticKeyAction": "matched_existing",
+                  "matchedSemanticEventId": "event-456",
+                  "confidence": 0.91,
+                  "shouldPublish": true,
+                  "rejectionReason": null
+                }
+                """));
+        HttpOpenAiClient client = client(sender);
+
+        OpenAiClient.ClassificationResult result = client.classify(classificationRequest(List.of("weather")));
+
+        assertThat(result.response().shouldPublish()).isFalse();
+        assertThat(result.response().rejectionReason().name()).isEqualTo("NOT_PUBLISHABLE_CATEGORY");
+    }
+
+    @Test
     void sendsPublicationContentRequestAndParsesOutputText() {
         FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
                 {

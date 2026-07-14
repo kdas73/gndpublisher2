@@ -260,10 +260,12 @@ public class HttpOpenAiClient implements OpenAiClient {
                 && "created_new".equals(response.semanticKeyAction().jsonValue())) {
             matchedSemanticEventId = null;
         }
+        boolean shouldPublish = normalizedShouldPublish(request, response, categoryCodes);
         ClassificationRejectionReasonDto rejectionReason = normalizedRejectionReason(request, response, categoryCodes);
 
         if (!categoryCodes.equals(response.categoryCodes())
                 || !Objects.equals(matchedSemanticEventId, response.matchedSemanticEventId())
+                || shouldPublish != response.shouldPublish()
                 || rejectionReason != response.rejectionReason()) {
             return new CategoryClassificationResponse(
                     response.primaryCategoryCode(),
@@ -272,7 +274,7 @@ public class HttpOpenAiClient implements OpenAiClient {
                     response.semanticKeyAction(),
                     matchedSemanticEventId,
                     response.confidence(),
-                    response.shouldPublish(),
+                    shouldPublish,
                     rejectionReason);
         }
         return response;
@@ -293,7 +295,7 @@ public class HttpOpenAiClient implements OpenAiClient {
             CategoryClassificationRequest request,
             CategoryClassificationResponse response,
             List<String> categoryCodes) {
-        if (response.shouldPublish() || response.rejectionReason() != null) {
+        if (response.rejectionReason() != null) {
             return response.rejectionReason();
         }
         Set<String> publishableCodes = Set.copyOf(request.publishableCategoryCodes());
@@ -302,6 +304,17 @@ public class HttpOpenAiClient implements OpenAiClient {
             return ClassificationRejectionReasonDto.NOT_PUBLISHABLE_CATEGORY;
         }
         return null;
+    }
+
+    private boolean normalizedShouldPublish(
+            CategoryClassificationRequest request,
+            CategoryClassificationResponse response,
+            List<String> categoryCodes) {
+        if (!response.shouldPublish()) {
+            return false;
+        }
+        Set<String> publishableCodes = Set.copyOf(request.publishableCategoryCodes());
+        return categoryCodes.stream().anyMatch(publishableCodes::contains);
     }
 
     private Map<String, Object> publicationContentResponseSchema() {
