@@ -5,8 +5,11 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gnd.publisher.config.OpenAiProperties;
 import com.gnd.publisher.dto.openai.CategoryClassificationRequest;
 import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
+import com.gnd.publisher.dto.openai.ClassificationRejectionReasonDto;
 import com.gnd.publisher.dto.openai.PublicationContentRequest;
 import com.gnd.publisher.dto.openai.PublicationContentResponse;
 import com.gnd.publisher.exception.OpenAiIntegrationException;
@@ -24,6 +28,7 @@ import org.springframework.stereotype.Component;
 public class HttpOpenAiClient implements OpenAiClient {
 
     private static final URI RESPONSES_URI = URI.create("https://api.openai.com/v1/responses");
+    private static final int MAX_ERROR_BODY_LENGTH = 1000;
 
     private final OpenAiProperties properties;
     private final PromptLoader promptLoader;
@@ -53,7 +58,7 @@ public class HttpOpenAiClient implements OpenAiClient {
                 classificationResponseSchema(),
                 request,
                 CategoryClassificationResponse.class);
-        CategoryClassificationResponse response = parsedResponse.value();
+        CategoryClassificationResponse response = normalizeClassificationResponse(request, parsedResponse.value());
         validator.validateClassification(request, response);
         return new ClassificationResult(response, parsedResponse.rawResponse(), properties.models().categorization());
     }
@@ -93,7 +98,10 @@ public class HttpOpenAiClient implements OpenAiClient {
 
         HttpResponse<String> httpResponse = send(httpRequest);
         if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
-            throw new OpenAiIntegrationException("OpenAI returned HTTP status " + httpResponse.statusCode());
+            throw new OpenAiIntegrationException("OpenAI returned HTTP status "
+                    + httpResponse.statusCode()
+                    + ": "
+                    + errorDetails(httpResponse.body()));
         }
 
         String outputText = extractOutputText(httpResponse.body());
@@ -158,6 +166,29 @@ public class HttpOpenAiClient implements OpenAiClient {
         }
     }
 
+    private String errorDetails(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return "empty response body";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            String message = root.path("error").path("message").asText();
+            if (!message.isBlank()) {
+                return truncate(message);
+            }
+        } catch (JsonProcessingException ignored) {
+            // Fall back to a truncated raw body when OpenAI returns non-JSON diagnostics.
+        }
+        return truncate(responseBody);
+    }
+
+    private String truncate(String value) {
+        if (value.length() <= MAX_ERROR_BODY_LENGTH) {
+            return value;
+        }
+        return value.substring(0, MAX_ERROR_BODY_LENGTH) + "...";
+    }
+
     private String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
@@ -218,6 +249,59 @@ public class HttpOpenAiClient implements OpenAiClient {
                         "confidence",
                         "shouldPublish",
                         "rejectionReason"));
+    }
+
+    private CategoryClassificationResponse normalizeClassificationResponse(
+            CategoryClassificationRequest request,
+            CategoryClassificationResponse response) {
+        List<String> categoryCodes = normalizedCategoryCodes(response);
+        String matchedSemanticEventId = response.matchedSemanticEventId();
+        if (response.semanticKeyAction() != null
+                && "created_new".equals(response.semanticKeyAction().jsonValue())) {
+            matchedSemanticEventId = null;
+        }
+        ClassificationRejectionReasonDto rejectionReason = normalizedRejectionReason(request, response, categoryCodes);
+
+        if (!categoryCodes.equals(response.categoryCodes())
+                || !Objects.equals(matchedSemanticEventId, response.matchedSemanticEventId())
+                || rejectionReason != response.rejectionReason()) {
+            return new CategoryClassificationResponse(
+                    response.primaryCategoryCode(),
+                    categoryCodes,
+                    response.semanticKey(),
+                    response.semanticKeyAction(),
+                    matchedSemanticEventId,
+                    response.confidence(),
+                    response.shouldPublish(),
+                    rejectionReason);
+        }
+        return response;
+    }
+
+    private List<String> normalizedCategoryCodes(CategoryClassificationResponse response) {
+        Set<String> categoryCodes = new LinkedHashSet<>();
+        if (response.categoryCodes() != null) {
+            categoryCodes.addAll(response.categoryCodes());
+        }
+        if (response.primaryCategoryCode() != null && !response.primaryCategoryCode().isBlank()) {
+            categoryCodes.add(response.primaryCategoryCode());
+        }
+        return List.copyOf(categoryCodes);
+    }
+
+    private ClassificationRejectionReasonDto normalizedRejectionReason(
+            CategoryClassificationRequest request,
+            CategoryClassificationResponse response,
+            List<String> categoryCodes) {
+        if (response.shouldPublish() || response.rejectionReason() != null) {
+            return response.rejectionReason();
+        }
+        Set<String> publishableCodes = Set.copyOf(request.publishableCategoryCodes());
+        boolean hasPublishableCategory = categoryCodes.stream().anyMatch(publishableCodes::contains);
+        if (!hasPublishableCategory) {
+            return ClassificationRejectionReasonDto.NOT_PUBLISHABLE_CATEGORY;
+        }
+        return null;
     }
 
     private Map<String, Object> publicationContentResponseSchema() {

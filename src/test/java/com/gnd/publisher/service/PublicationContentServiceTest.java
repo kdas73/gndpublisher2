@@ -35,6 +35,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionOperations;
 
 @ExtendWith(MockitoExtension.class)
 class PublicationContentServiceTest {
@@ -64,7 +66,7 @@ class PublicationContentServiceTest {
                 .thenReturn(List.of(NewsItemCategory.classifierMatch(
                         newsItem,
                         politics,
-                        "GPT5.5-mini",
+                        "gpt-5.4-mini",
                         java.math.BigDecimal.valueOf(0.91),
                         NOW)));
         when(generator.prepare(any(PublicationContentRequest.class)))
@@ -83,7 +85,7 @@ class PublicationContentServiceTest {
                     assertThat(translation.getNewsItem()).isSameAs(newsItem);
                     assertThat(translation.getTargetLanguage()).isEqualTo("en");
                     assertThat(translation.getProvider()).isEqualTo("openai");
-                    assertThat(translation.getModel()).isEqualTo("GPT-5.5");
+                    assertThat(translation.getModel()).isEqualTo("gpt-5.5");
                 });
 
         ArgumentCaptor<PublicationContentRequest> requestCaptor =
@@ -111,7 +113,7 @@ class PublicationContentServiceTest {
                 "Existing title",
                 "Existing summary",
                 "openai",
-                "GPT-5.5");
+                "gpt-5.5");
         when(translationRepository.findBySemanticEvent_IdAndTargetLanguage(200L, "en"))
                 .thenReturn(Optional.of(existing));
 
@@ -170,7 +172,17 @@ class PublicationContentServiceTest {
                 newsItemRepository,
                 newsItemCategoryRepository,
                 publishingProperties(targetLanguages),
-                openAiProperties());
+                openAiProperties(),
+                transactionOperations());
+    }
+
+    private TransactionOperations transactionOperations() {
+        return new TransactionOperations() {
+            @Override
+            public <T> T execute(org.springframework.transaction.support.TransactionCallback<T> action) {
+                return action.doInTransaction(new SimpleTransactionStatus());
+            }
+        };
     }
 
     private PublishingProperties publishingProperties(String... targetLanguages) {
@@ -186,7 +198,7 @@ class PublicationContentServiceTest {
     private OpenAiProperties openAiProperties() {
         return new OpenAiProperties(
                 "test-key",
-                new OpenAiProperties.Models("GPT5.5-mini", "GPT-5.5"),
+                new OpenAiProperties.Models("gpt-5.4-mini", "gpt-5.5"),
                 new OpenAiProperties.Prompts(
                         "classification-v1",
                         "editorial-rules-v1",

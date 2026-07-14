@@ -45,6 +45,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionOperations;
 
 @ExtendWith(MockitoExtension.class)
 class CategorizationServiceTest {
@@ -263,7 +265,17 @@ class CategorizationServiceTest {
                 categoryProperties(),
                 openAiProperties(),
                 promptLoader,
+                transactionOperations(),
                 Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    private TransactionOperations transactionOperations() {
+        return new TransactionOperations() {
+            @Override
+            public <T> T execute(org.springframework.transaction.support.TransactionCallback<T> action) {
+                return action.doInTransaction(new SimpleTransactionStatus());
+            }
+        };
     }
 
     private CategoryProperties categoryProperties() {
@@ -280,7 +292,7 @@ class CategorizationServiceTest {
     private OpenAiProperties openAiProperties() {
         return new OpenAiProperties(
                 "test-key",
-                new OpenAiProperties.Models("GPT5.5-mini", "GPT-5.5"),
+                new OpenAiProperties.Models("gpt-5.4-mini", "gpt-5.5"),
                 new OpenAiProperties.Prompts(
                         "classification-v1",
                         "editorial-rules-v1",
@@ -340,6 +352,6 @@ class CategorizationServiceTest {
     }
 
     private OpenAiCategorizer.CategorizationResult result(CategoryClassificationResponse response) {
-        return new OpenAiCategorizer.CategorizationResult(response, "{\"semanticKey\":\"test\"}", "GPT5.5-mini");
+        return new OpenAiCategorizer.CategorizationResult(response, "{\"semanticKey\":\"test\"}", "gpt-5.4-mini");
     }
 }

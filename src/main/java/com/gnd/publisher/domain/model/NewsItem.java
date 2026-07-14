@@ -76,6 +76,9 @@ public class NewsItem extends AuditableEntity {
     @Column(name = "selected_for_publication", nullable = false)
     private boolean selectedForPublication;
 
+    @Column(name = "publication_processed_at")
+    private Instant publicationProcessedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "rejection_reason", length = 100)
     private RejectionReason rejectionReason;
@@ -166,6 +169,11 @@ public class NewsItem extends AuditableEntity {
         this.rejectionReason = RejectionReason.SOURCE_RUN_QUOTA_EXCEEDED;
     }
 
+    public void markPublicationProcessed(Instant processedAt) {
+        this.selectedForPublication = false;
+        this.publicationProcessedAt = processedAt;
+    }
+
     public void markClassificationFailed(Instant classifiedAt) {
         this.classificationStatus = ClassificationStatus.FAILED;
         this.classifiedAt = classifiedAt;
@@ -236,6 +244,10 @@ public class NewsItem extends AuditableEntity {
 
     public boolean isSelectedForPublication() {
         return selectedForPublication;
+    }
+
+    public Instant getPublicationProcessedAt() {
+        return publicationProcessedAt;
     }
 
     public RejectionReason getRejectionReason() {

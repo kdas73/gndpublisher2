@@ -1,28 +1,29 @@
-package com.gnd.publisher.integration.openai;
+package com.gnd.publisher.integration.telegram;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-
-import com.gnd.publisher.config.OpenAiProperties;
+import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JdkOpenAiHttpSender implements OpenAiHttpSender {
+public class JdkTelegramHttpSender implements TelegramHttpSender {
+
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
     private final HttpClient httpClient;
 
     @Autowired
-    public JdkOpenAiHttpSender(OpenAiProperties properties) {
+    public JdkTelegramHttpSender() {
         this(HttpClient.newBuilder()
-                .connectTimeout(properties.timeouts().connect())
+                .connectTimeout(CONNECT_TIMEOUT)
                 .build());
     }
 
-    JdkOpenAiHttpSender(HttpClient httpClient) {
+    JdkTelegramHttpSender(HttpClient httpClient) {
         this.httpClient = httpClient;
     }
 

@@ -7,7 +7,7 @@ Generate target-language publication content for selected publishable semantic e
 ## Scope
 
 - Determine target languages.
-- Call GPT-5.5 publication content flow only for selected candidates.
+- Call gpt-5.5 publication content flow only for selected candidates.
 - Include semantic key and category context in the request.
 - Create or improve concise summaries as part of target-language content generation.
 - Persist target-language publication content by semantic event and target language.

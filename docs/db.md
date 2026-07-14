@@ -70,6 +70,7 @@ Expected fields:
 - `processing_run_id`
 - `publication_candidate`
 - `selected_for_publication`
+- `publication_processed_at`
 - `rejection_reason`
 - `created_at`
 - `updated_at`
@@ -82,6 +83,7 @@ Publication selection fields:
 
 - `publication_candidate`: true when the item is eligible after classification and category filtering.
 - `selected_for_publication`: true when the item survives per-source run quota selection.
+- `publication_processed_at`: set when the publisher has taken the selected item through the publication attempt flow; processed items are ignored by later publication and quota-selection cycles.
 - `rejection_reason`: explains why an item did not continue to publication content generation and publication.
 
 Per-source publication quota overrides use `rss_sources.code` values as configuration keys.
@@ -111,7 +113,7 @@ Expected fields:
 - `created_at`
 - `updated_at`
 
-`semantic_key` is a short normalized phrase returned by OpenAI GPT5.5-mini. It should not be globally unique across all time because similar events can happen again later. Matching must be controlled by application logic using a configured lookup time window.
+`semantic_key` is a short normalized phrase returned by OpenAI gpt-5.4-mini. It should not be globally unique across all time because similar events can happen again later. Matching must be controlled by application logic using a configured lookup time window.
 
 ### categories
 
@@ -129,7 +131,7 @@ Expected fields:
 
 ### news_item_categories
 
-Maps news items to categories. Categorization is performed by OpenAI GPT5.5-mini.
+Maps news items to categories. Categorization is performed by OpenAI gpt-5.4-mini.
 
 Expected fields:
 
@@ -166,7 +168,7 @@ Expected fields:
 
 ### translations
 
-Stores target-language publication content for selected semantic events or their canonical news items. Publication content generation is performed by OpenAI GPT-5.5.
+Stores target-language publication content for selected semantic events or their canonical news items. Publication content generation is performed by OpenAI gpt-5.5.
 
 Expected fields:
 
@@ -209,6 +211,7 @@ Stores destination channels.
 Expected fields:
 
 - `id`
+- `code`
 - `language`
 - `channel_id`
 - `username`
@@ -217,6 +220,9 @@ Expected fields:
 - `enabled`
 - `created_at`
 - `updated_at`
+
+`code` is a unique, stable routing key that matches configured Telegram channel entries such as `news-en` or `important-news-en`.
+`channel_id` is the Telegram chat identifier used by the Bot API and should be supplied through configuration or secrets.
 
 ### publications
 
@@ -296,12 +302,13 @@ for digest inclusion.
 - `news_items(semantic_event_id)`
 - `news_items(classification_status)`
 - `news_items(processing_run_id, source_id)`
-- `news_items(source_id, selected_for_publication)`
+- `news_items(source_id, selected_for_publication, publication_processed_at)`
 - `news_items(source_id, external_id)`
 - `news_items(source_id, source_url)`
 - `classification_runs(news_item_id)`
 - `classification_runs(created_at)`
 - `translations(semantic_event_id, target_language)` unique
+- `telegram_channels(code)` unique
 - `publications(semantic_event_id, telegram_channel_id, target_language)`
 - `publications(telegram_message_url)`
 - `important_news_digest_posts(telegram_channel_id, target_language, published_at)`

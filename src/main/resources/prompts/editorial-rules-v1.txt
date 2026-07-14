@@ -1,2 +1,9 @@
-For sports news, publish only items with concrete match results.
-Ignore celebrity death news unless it has direct political or public-safety impact.
+Publish only news with a direct, central connection to Greece.
+Reject news where Greece is only mentioned in passing, used for comparison, listed among many countries, or implied only because the source is Greek.
+Reject international news unless Greece is explicitly an actor, affected party, host, destination, location, or the article describes concrete consequences for Greece or people/organizations in Greece.
+Reject articles whose title and summary do not clearly establish the Greece connection; do not infer missing context.
+If the news is international, it is relevant only when Greece is directly involved.
+If the article is not clearly about Greece or not directly connected to Greece, mark it as irrelevant.
+If the article is about politics (including domestic political process, parties, elections, political disputes, statements of politicians), mark it as irrelevant.
+If the article is about death, obituary, passed-away, or similar death-related context, mark it as irrelevant regardless of topic category.
+For SPORTS, mark relevant only match results (wins/losses/draws/final score outcomes) and for games with Greek teams and sportsmen. Any other sports content is irrelevant.

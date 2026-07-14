@@ -23,6 +23,9 @@ public interface NewsItemRepository extends JpaRepository<NewsItem, Long> {
     @Query("select item from NewsItem item where item.id = :id")
     java.util.Optional<NewsItem> findPublicationContentContextById(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = {"source", "semanticEvent", "semanticEvent.category"})
+    List<NewsItem> findBySelectedForPublicationTrueAndPublicationProcessedAtIsNullAndSemanticEventIsNotNull();
+
     @Query("""
             select new com.gnd.publisher.repository.SourceQuotaCandidate(item, source.code, category.publicationPriority)
             from NewsItem item
@@ -33,6 +36,7 @@ public interface NewsItemRepository extends JpaRepository<NewsItem, Long> {
               and item.classificationStatus = com.gnd.publisher.domain.enums.ClassificationStatus.CLASSIFIED
               and item.semanticEvent is not null
               and item.selectedForPublication = false
+              and item.publicationProcessedAt is null
               and (
                   item.processingRunId = :processingRunId
                   or item.rejectionReason = com.gnd.publisher.domain.enums.RejectionReason.SOURCE_RUN_QUOTA_EXCEEDED

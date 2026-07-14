@@ -1,6 +1,10 @@
 spring:
   application:
     name: gnd-publisher
+  task:
+    scheduling:
+      pool:
+        size: 4
   jpa:
     hibernate:
       ddl-auto: validate
@@ -22,39 +26,116 @@ gnd:
   profile: ${GND_PROFILE:local}
   categories:
     options:
-      - code: politics
-        name: Politics
-        description: Government, elections, laws, public administration
-        publication-priority: 10
+      - code: LAW_CHANGES
+        name: Law Changes
+        description: Changes in Greek laws and regulations
+        publication-priority: 100
         enabled: true
-      - code: economy
+      - code: HOLIDAYS
+        name: Holidays
+        description: Greek holidays
+        publication-priority: 95
+        enabled: true
+      - code: ORGANIZATION_HOLIDAYS
+        name: Organization Holidays
+        description: How organizations in Greece work during holidays
+        publication-priority: 92
+        enabled: true
+      - code: ECONOMY
         name: Economy
-        description: Economy, business, markets, labor, public finance
-        publication-priority: 20
+        description: economy of Greece
+        publication-priority: 90
         enabled: true
-      - code: society
-        name: Society
-        description: Public safety, courts, education, health, daily life
-        publication-priority: 30
+      - code: STRIKES
+        name: Strikes
+        description: Strikes in Greece
+        publication-priority: 88
         enabled: true
-      - code: weather
-        name: Weather
-        description: Weather alerts, climate events, natural hazards
-        publication-priority: 40
+      - code: RUSSIA_GREECE_RELATIONS
+        name: Russia Greece Relations
+        description: Russian-Greek relations
+        publication-priority: 84
         enabled: true
-      - code: sports
+      - code: TOURISM
+        name: Tourism
+        description: Tourism in Greece
+        publication-priority: 80
+        enabled: true
+      - code: CULTURE
+        name: Culture
+        description: Greece-related culture
+        publication-priority: 75
+        enabled: true
+      - code: CULTURAL_EVENTS
+        name: Cultural Events
+        description: cultural events in Greece
+        publication-priority: 74
+        enabled: true
+      - code: ENTERTAINMENT
+        name: Entertainment
+        description: Greek celebrities and entertainment
+        publication-priority: 68
+        enabled: true
+      - code: CINEMA_THEATRE
+        name: Cinema Theatre
+        description: Cinema and theatre in Greece
+        publication-priority: 67
+        enabled: true
+      - code: SPORTS
         name: Sports
-        description: Sports results, competitions, teams, athletes
+        description: sports in Greece
+        publication-priority: 65
+        enabled: true
+      - code: CUISINE
+        name: Cuisine
+        description: Greek cuisine
+        publication-priority: 55
+        enabled: true
+      - code: HISTORY
+        name: History
+        description: Greek history
         publication-priority: 50
         enabled: true
+      - code: HEALTHCARE
+        name: Healthcare
+        description: Healthcare in Greece
+        publication-priority: 48
+        enabled: true
+      - code: RELIGION
+        name: Religion
+        description: Religion in Greece
+        publication-priority: 47
+        enabled: true
+      - code: POLITICS
+        name: Politics
+        description: Politics in Greece
+        publication-priority: 45
+        enabled: true
+      - code: INCIDENTS
+        name: Incidents
+        description: incidents in Greece
+        publication-priority: 1
+        enabled: true
     publishable-codes:
-      - politics
-      - economy
-      - society
-      - weather
+      - LAW_CHANGES
+      - HOLIDAYS
+      - ORGANIZATION_HOLIDAYS
+      - ECONOMY
+      - STRIKES
+      - RUSSIA_GREECE_RELATIONS
+      - TOURISM
+      - CULTURE
+      - CULTURAL_EVENTS
+      - ENTERTAINMENT
+      - CINEMA_THEATRE
+      - SPORTS
+      - CUISINE
+      - HISTORY
+      - HEALTHCARE
+      - RELIGION
   publishing:
     target-languages:
-      - en
+      - ru
     default-max-items-per-source-per-run: 3
     source-quota-overrides: {}
     summary-max-characters: 600
@@ -67,14 +148,14 @@ gnd:
     enabled: true
     cron: "0 0 */6 * * *"
     duplicate-threshold: 2
-    target-language: en
-    channel-code: important-news-en
+    target-language: ru
+    channel-code: important-news-ru
     lookback-window: 7d
   openai:
     api-key: ${OPENAI_API_KEY:}
     models:
-      categorization: GPT5.5-mini
-      publication-content: GPT-5.5
+      categorization: gpt-5.4-mini
+      publication-content: gpt-5
     prompts:
       classification-version: classification-v1
       editorial-rules-version: editorial-rules-v1
@@ -86,17 +167,17 @@ gnd:
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     channels:
-      - code: news-en
-        language: en
-        channel-id: ${TELEGRAM_NEWS_EN_CHANNEL_ID:}
-        username: ${TELEGRAM_NEWS_EN_USERNAME:}
-        message-url-template: ${TELEGRAM_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}
+      - code: news-ru
+        language: ru
+        channel-id: ${TELEGRAM_NEWS_RU_CHANNEL_ID:${TELEGRAM_NEWS_EN_CHANNEL_ID:}}
+        username: ${TELEGRAM_NEWS_RU_USERNAME:${TELEGRAM_NEWS_EN_USERNAME:}}
+        message-url-template: ${TELEGRAM_NEWS_RU_MESSAGE_URL_TEMPLATE:${TELEGRAM_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}}
         enabled: true
-      - code: important-news-en
-        language: en
-        channel-id: ${TELEGRAM_IMPORTANT_NEWS_EN_CHANNEL_ID:}
-        username: ${TELEGRAM_IMPORTANT_NEWS_EN_USERNAME:}
-        message-url-template: ${TELEGRAM_IMPORTANT_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}
+      - code: important-news-ru
+        language: ru
+        channel-id: ${TELEGRAM_IMPORTANT_NEWS_RU_CHANNEL_ID:${TELEGRAM_IMPORTANT_NEWS_EN_CHANNEL_ID:}}
+        username: ${TELEGRAM_IMPORTANT_NEWS_RU_USERNAME:${TELEGRAM_IMPORTANT_NEWS_EN_USERNAME:}}
+        message-url-template: ${TELEGRAM_IMPORTANT_NEWS_RU_MESSAGE_URL_TEMPLATE:${TELEGRAM_IMPORTANT_NEWS_EN_MESSAGE_URL_TEMPLATE:https://t.me/{username}/{messageId}}}
         enabled: true
   scheduler:
     ingestion:
@@ -104,7 +185,7 @@ gnd:
       cron: "0 */3 * * * *"
     publication:
       enabled: true
-      cron: "0 */20 * * * *"
+      cron: "0 */1 * * * *"
     important-news-digest:
       enabled: true
       cron: "0 0 */6 * * *"
@@ -113,6 +194,6 @@ gnd:
       cron: "0 0 3 * * *"
   cleanup:
     news-items-retention: 30d
-    classification-runs-retention: 30d
-    publications-retention: 180d
-    digest-retention: 180d
+    classification-runs-retention: 5d
+    publications-retention: 30d
+    digest-retention: 30d

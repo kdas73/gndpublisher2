@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,7 +40,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class CategorizationService {
@@ -55,6 +58,7 @@ public class CategorizationService {
     private final CategoryProperties categoryProperties;
     private final OpenAiProperties openAiProperties;
     private final PromptLoader promptLoader;
+    private final TransactionOperations transactionOperations;
     private final Clock clock;
 
     @Autowired
@@ -67,7 +71,8 @@ public class CategorizationService {
             ClassificationRunRepository classificationRunRepository,
             CategoryProperties categoryProperties,
             OpenAiProperties openAiProperties,
-            PromptLoader promptLoader) {
+            PromptLoader promptLoader,
+            PlatformTransactionManager transactionManager) {
         this(
                 openAiCategorizer,
                 semanticEventGroupingService,
@@ -78,6 +83,7 @@ public class CategorizationService {
                 categoryProperties,
                 openAiProperties,
                 promptLoader,
+                new TransactionTemplate(transactionManager),
                 Clock.systemUTC());
     }
 
@@ -91,6 +97,7 @@ public class CategorizationService {
             CategoryProperties categoryProperties,
             OpenAiProperties openAiProperties,
             PromptLoader promptLoader,
+            TransactionOperations transactionOperations,
             Clock clock) {
         this.openAiCategorizer = openAiCategorizer;
         this.semanticEventGroupingService = semanticEventGroupingService;
@@ -101,16 +108,17 @@ public class CategorizationService {
         this.categoryProperties = categoryProperties;
         this.openAiProperties = openAiProperties;
         this.promptLoader = promptLoader;
+        this.transactionOperations = transactionOperations;
         this.clock = clock;
     }
 
-    @Transactional
     public void classifyNewItems(Collection<NewsItem> newsItems) {
         if (newsItems.isEmpty()) {
             return;
         }
 
-        Map<String, Category> categoriesByCode = syncConfiguredCategories();
+        Map<String, Category> categoriesByCode = Objects.requireNonNull(
+                transactionOperations.execute(status -> syncConfiguredCategories()));
         List<CategoryOptionDto> categoryOptions = categoryOptions();
         List<String> editorialRules = editorialRules();
         newsItems.forEach(newsItem -> classifyOne(newsItem, categoriesByCode, categoryOptions, editorialRules));
@@ -132,41 +140,54 @@ public class CategorizationService {
                     candidates.dtos());
             OpenAiCategorizer.CategorizationResult result = openAiCategorizer.classify(request);
             CategoryClassificationResponse response = result.response();
-            validateResponseCategories(response, categoriesByCode.keySet());
-
-            Category primaryCategory = category(response.primaryCategoryCode(), categoriesByCode);
-            GroupedSemanticEvent groupedEvent = semanticEventGroupingService.group(
-                    response.semanticKeyAction(),
-                    response.semanticKey(),
-                    response.matchedSemanticEventId(),
-                    candidates,
-                    primaryCategory,
-                    classifiedAt);
-
-            BigDecimal confidence = BigDecimal.valueOf(response.confidence());
-            RejectionReason rejectionReason = rejectionReason(response);
-            newsItem.markClassified(
-                    groupedEvent.semanticEvent(),
-                    confidence,
-                    response.shouldPublish(),
-                    rejectionReason,
-                    classifiedAt);
-            newsItemRepository.save(newsItem);
-            saveCategoryMatches(newsItem, response.categoryCodes(), categoriesByCode, result.model(), confidence, classifiedAt);
-            saveClassificationRun(
-                    newsItem,
-                    groupedEvent.semanticEvent(),
-                    groupedEvent.matchedSemanticEvent(),
-                    primaryCategory,
-                    candidates,
-                    result,
-                    confidence,
-                    classifiedAt);
+            transactionOperations.executeWithoutResult(status ->
+                    saveSuccessfulClassification(newsItem, categoriesByCode, candidates, result, response, classifiedAt));
         } catch (RuntimeException exception) {
-            newsItem.markClassificationFailed(classifiedAt);
-            newsItemRepository.save(newsItem);
+            transactionOperations.executeWithoutResult(status -> {
+                newsItem.markClassificationFailed(classifiedAt);
+                newsItemRepository.save(newsItem);
+            });
             LOGGER.warn("Failed to classify news item {}", newsItem.getId(), exception);
         }
+    }
+
+    private void saveSuccessfulClassification(
+            NewsItem newsItem,
+            Map<String, Category> categoriesByCode,
+            CandidateSemanticEvents candidates,
+            OpenAiCategorizer.CategorizationResult result,
+            CategoryClassificationResponse response,
+            Instant classifiedAt) {
+        validateResponseCategories(response, categoriesByCode.keySet());
+
+        Category primaryCategory = category(response.primaryCategoryCode(), categoriesByCode);
+        GroupedSemanticEvent groupedEvent = semanticEventGroupingService.group(
+                response.semanticKeyAction(),
+                response.semanticKey(),
+                response.matchedSemanticEventId(),
+                candidates,
+                primaryCategory,
+                classifiedAt);
+
+        BigDecimal confidence = BigDecimal.valueOf(response.confidence());
+        RejectionReason rejectionReason = rejectionReason(response);
+        newsItem.markClassified(
+                groupedEvent.semanticEvent(),
+                confidence,
+                response.shouldPublish(),
+                rejectionReason,
+                classifiedAt);
+        newsItemRepository.save(newsItem);
+        saveCategoryMatches(newsItem, response.categoryCodes(), categoriesByCode, result.model(), confidence, classifiedAt);
+        saveClassificationRun(
+                newsItem,
+                groupedEvent.semanticEvent(),
+                groupedEvent.matchedSemanticEvent(),
+                primaryCategory,
+                candidates,
+                result,
+                confidence,
+                classifiedAt);
     }
 
     private Map<String, Category> syncConfiguredCategories() {

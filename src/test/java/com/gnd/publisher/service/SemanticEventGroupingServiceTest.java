@@ -113,7 +113,7 @@ class SemanticEventGroupingServiceTest {
     private OpenAiProperties openAiProperties() {
         return new OpenAiProperties(
                 "test-key",
-                new OpenAiProperties.Models("GPT5.5-mini", "GPT-5.5"),
+                new OpenAiProperties.Models("gpt-5.4-mini", "gpt-5.5"),
                 new OpenAiProperties.Prompts(
                         "classification-v1",
                         "editorial-rules-v1",

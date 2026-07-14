@@ -11,8 +11,8 @@ The application should automate multilingual news publishing while preserving th
 1. Read configured RSS feeds on a schedule.
 2. Normalize feed items into a common internal news format.
 3. Store source-level new items in the database.
-4. Use OpenAI GPT5.5-mini to assign each item to an existing or new semantic event key and match it against configured categories.
-5. Use OpenAI GPT-5.5 to create or improve selected summaries and produce target-language publication content in one call.
+4. Use OpenAI gpt-5.4-mini to assign each item to an existing or new semantic event key and match it against configured categories.
+5. Use OpenAI gpt-5.5 to create or improve selected summaries and produce target-language publication content in one call.
 6. Publish target-language event messages to Telegram channels mapped by language.
 7. Include the original source in every Telegram message.
 
@@ -22,9 +22,9 @@ The application should automate multilingual news publishing while preserving th
 - News item: a normalized article or feed entry stored in the database.
 - Semantic event: a real-world news event represented by a short semantic key and linked to one or more source news items.
 - Category: a project-defined grouping used to decide whether a news item should be processed.
-- Categorizer: OpenAI GPT5.5-mini model used to assign news items to project categories and semantic event keys.
+- Categorizer: OpenAI gpt-5.4-mini model used to assign news items to project categories and semantic event keys.
 - Language: a target publication language.
-- Publication content provider: OpenAI GPT-5.5 model used to generate target-language titles and summaries for selected publishable events.
+- Publication content provider: OpenAI gpt-5.5 model used to generate target-language titles and summaries for selected publishable events.
 - Telegram channel: a destination channel for one language or language/category combination.
 - Publication: a record that a target-language news item was sent to a Telegram channel.
 

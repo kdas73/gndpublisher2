@@ -7,11 +7,11 @@ GND Publisher is a Spring Boot service organized around a scheduled news process
 - Scheduler: triggers periodic RSS ingestion and publication jobs.
 - Feed ingestion: downloads RSS feeds and converts entries into normalized news items.
 - Source deduplication: prevents storing the same RSS item from the same source multiple times using source identifiers and normalized URLs.
-- Semantic event grouping: uses OpenAI GPT5.5-mini to assign each news item to an existing semantic event key or create a new one.
+- Semantic event grouping: uses OpenAI gpt-5.4-mini to assign each news item to an existing semantic event key or create a new one.
 - Persistence: stores sources, news items, semantic events, categories, translations, classification runs, and publication records.
-- Categorization: uses OpenAI GPT5.5-mini to select publication categories and semantic event keys.
+- Categorization: uses OpenAI gpt-5.4-mini to select publication categories and semantic event keys.
 - Source quota selection: limits how many publishable items from one RSS source can continue in each run.
-- Publication content generation: uses OpenAI GPT-5.5 to create or improve selected summaries and produce target-language publication content in one call.
+- Publication content generation: uses OpenAI gpt-5.5 to create or improve selected summaries and produce target-language publication content in one call.
 - Telegram publishing: sends target-language publication messages to Telegram channels.
 - Important news digest publishing: periodically publishes a post with links to already published events that are important because they are covered by more than the configured number of semantic duplicates.
 - Cleanup: deletes or archives records older than the configured retention period.
@@ -25,11 +25,11 @@ GND Publisher is a Spring Boot service organized around a scheduled news process
 3. Each feed entry is normalized into an internal news item.
 4. The persistence layer stores only source-level new or changed items.
 5. The categorization request includes the current news item, all configured category options, publishable category codes, free-form editorial rules, and existing semantic event keys from a configured lookup time window.
-6. OpenAI GPT5.5-mini chooses an existing semantic event key or returns a new one as a short normalized phrase.
+6. OpenAI gpt-5.4-mini chooses an existing semantic event key or returns a new one as a short normalized phrase.
 7. The news item is linked to the matching or newly created semantic event.
 8. Source quota selection keeps only a configured number of publishable candidates per RSS source for the current run.
 9. Items not selected by the source quota are marked with `rejection_reason = SOURCE_RUN_QUOTA_EXCEEDED`.
-10. OpenAI GPT-5.5 produces language-specific publication content for selected publishable semantic events, using classification context such as semantic key and category codes.
+10. OpenAI gpt-5.5 produces language-specific publication content for selected publishable semantic events, using classification context such as semantic key and category codes.
 11. The publication content response contains the target-language title and summary.
 12. Telegram publishing sends each target-language event to the configured channel for that language.
 13. Publication results are stored at semantic event level to prevent duplicate sends and support troubleshooting.
@@ -266,8 +266,8 @@ Do not add `controller` packages until the application needs a REST API, admin A
 
 ## OpenAI Usage
 
-- Categorization model: `GPT5.5-mini`.
-- Publication content generation model: `GPT-5.5`.
+- Categorization model: `gpt-5.4-mini`.
+- Publication content generation model: `gpt-5.5`.
 - OpenAI prompt versions and model names should be configurable.
 - OpenAI prompt templates and editorial classification rules must be stored as text files under `src/main/resources/prompts/`.
 - OpenAI JSON request and response contracts are defined in `docs/openai.md`.
@@ -313,7 +313,10 @@ Liquibase is responsible for database initialization and schema updates.
 
 - Each target language must map to one or more Telegram channels.
 - Every Telegram message must include source attribution.
+- Regular Telegram messages format the translated title as a link to the original source URL, and the source attribution line shows only the source name as a link to the same original source URL.
+- Regular Telegram messages show the raw stored primary category code on a `Тема:` line below the source attribution.
 - Publication must be idempotent: rerunning a job must not resend the same semantic event to the same language/channel pair.
+- After the publisher takes a selected news item through the publication flow, it sets `publication_processed_at` and clears `selected_for_publication` so later publication cycles ignore that item.
 - Stored publication data must include a Telegram message URL or enough channel metadata to build one.
 - Important news digest posts must link titles to already published Telegram posts.
 - Publishing failures should be logged and persisted enough to support retry or diagnosis.

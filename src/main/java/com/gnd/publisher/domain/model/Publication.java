@@ -69,7 +69,83 @@ public class Publication extends AuditableEntity {
     protected Publication() {
     }
 
+    private Publication(
+            SemanticNewsEvent semanticEvent,
+            NewsItem newsItem,
+            Translation translation,
+            TelegramChannel telegramChannel,
+            String targetLanguage) {
+        this.semanticEvent = semanticEvent;
+        this.newsItem = newsItem;
+        this.translation = translation;
+        this.telegramChannel = telegramChannel;
+        this.targetLanguage = targetLanguage;
+        this.status = PublicationStatus.PENDING;
+    }
+
+    public static Publication pending(
+            SemanticNewsEvent semanticEvent,
+            NewsItem newsItem,
+            Translation translation,
+            TelegramChannel telegramChannel,
+            String targetLanguage) {
+        return new Publication(semanticEvent, newsItem, translation, telegramChannel, targetLanguage);
+    }
+
+    public void markPublished(String telegramMessageId, String telegramMessageUrl, Instant publishedAt) {
+        this.telegramMessageId = telegramMessageId;
+        this.telegramMessageUrl = telegramMessageUrl;
+        this.publishedAt = publishedAt;
+        this.errorMessage = null;
+        this.status = PublicationStatus.PUBLISHED;
+    }
+
+    public void markFailed(String errorMessage) {
+        this.errorMessage = errorMessage;
+        this.status = PublicationStatus.FAILED;
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public SemanticNewsEvent getSemanticEvent() {
+        return semanticEvent;
+    }
+
+    public NewsItem getNewsItem() {
+        return newsItem;
+    }
+
+    public Translation getTranslation() {
+        return translation;
+    }
+
+    public TelegramChannel getTelegramChannel() {
+        return telegramChannel;
+    }
+
+    public String getTargetLanguage() {
+        return targetLanguage;
+    }
+
+    public String getTelegramMessageId() {
+        return telegramMessageId;
+    }
+
+    public String getTelegramMessageUrl() {
+        return telegramMessageUrl;
+    }
+
+    public PublicationStatus getStatus() {
+        return status;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public Instant getPublishedAt() {
+        return publishedAt;
     }
 }

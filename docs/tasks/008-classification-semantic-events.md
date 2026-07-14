@@ -2,7 +2,7 @@
 
 ## Goal
 
-Use GPT5.5-mini to classify news items and assign them to semantic events.
+Use gpt-5.4-mini to classify news items and assign them to semantic events.
 
 ## Scope
 

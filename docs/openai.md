@@ -62,7 +62,7 @@ Rules:
 
 ## Classification And Semantic Event Grouping
 
-Model: `GPT5.5-mini`
+Model: `gpt-5.4-mini`
 
 Purpose:
 
@@ -144,7 +144,7 @@ Rules:
 
 ## Publication Content Generation
 
-Model: `GPT-5.5`
+Model: `gpt-5.5`
 
 Purpose:
 

@@ -13,8 +13,8 @@ class PromptLoaderTest {
 
     @Test
     void loadsPromptTemplatesFromResources() {
-        assertThat(promptLoader.load("classification-v1")).contains("classify Greek news items");
-        assertThat(promptLoader.load("publication-content-v1")).contains("target-language publication content");
+        assertThat(promptLoader.load("classification-v1")).contains("strict category relevance classifier");
+        assertThat(promptLoader.load("publication-content-v1")).contains("publisher of selected content");
     }
 
     @Test

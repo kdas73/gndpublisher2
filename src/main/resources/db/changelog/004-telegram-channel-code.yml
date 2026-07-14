@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-telegram-channel-code
+      author: codex
+      changes:
+        - addColumn:
+            tableName: telegram_channels
+            columns:
+              - column:
+                  name: code
+                  type: VARCHAR(100)
+        - createIndex:
+            tableName: telegram_channels
+            indexName: uk_telegram_channels_code
+            unique: true
+            columns:
+              - column:
+                  name: code

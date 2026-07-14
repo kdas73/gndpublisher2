@@ -39,7 +39,7 @@ class ConfigurationPropertiesBindingTest {
 
         OpenAiProperties openAi = bind("gnd.openai", OpenAiProperties.class, openAiProperties("test-api-key"));
         assertValid(openAi);
-        assertThat(openAi.models().categorization()).isEqualTo("GPT5.5-mini");
+        assertThat(openAi.models().categorization()).isEqualTo("gpt-5.4-mini");
 
         TelegramProperties telegram = bind("gnd.telegram", TelegramProperties.class, telegramProperties("test-bot-token"));
         assertValid(telegram);
@@ -186,8 +186,8 @@ class ConfigurationPropertiesBindingTest {
     private static Map<String, String> openAiProperties(String apiKey) {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("gnd.openai.api-key", apiKey);
-        values.put("gnd.openai.models.categorization", "GPT5.5-mini");
-        values.put("gnd.openai.models.publication-content", "GPT-5.5");
+        values.put("gnd.openai.models.categorization", "gpt-5.4-mini");
+        values.put("gnd.openai.models.publication-content", "gpt-5.5");
         values.put("gnd.openai.prompts.classification-version", "classification-v1");
         values.put("gnd.openai.prompts.editorial-rules-version", "editorial-rules-v1");
         values.put("gnd.openai.prompts.publication-content-version", "publication-content-v1");

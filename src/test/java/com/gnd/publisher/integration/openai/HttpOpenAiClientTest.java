@@ -62,20 +62,86 @@ class HttpOpenAiClientTest {
 
         assertThat(response.semanticKey()).isEqualTo("greek parliament approves new migration bill");
         assertThat(result.rawResponse()).contains("\"semanticKey\"");
-        assertThat(result.model()).isEqualTo("GPT5.5-mini");
+        assertThat(result.model()).isEqualTo("gpt-5.4-mini");
         HttpRequest request = sender.lastRequest();
         assertThat(request.uri()).isEqualTo(URI.create("https://api.openai.com/v1/responses"));
         assertThat(request.headers().firstValue("Authorization")).contains("Bearer test-api-key");
 
         JsonNode body = objectMapper.readTree(requestBody(request));
-        assertThat(body.path("model").asText()).isEqualTo("GPT5.5-mini");
-        assertThat(body.path("instructions").asText()).contains("classify Greek news items");
+        assertThat(body.path("model").asText()).isEqualTo("gpt-5.4-mini");
+        assertThat(body.path("instructions").asText()).contains("strict category relevance classifier");
         assertThat(body.path("text").path("format").path("type").asText()).isEqualTo("json_schema");
         assertThat(body.path("store").asBoolean()).isFalse();
 
         JsonNode input = objectMapper.readTree(body.path("input").asText());
         assertThat(input.path("newsItem").path("sourceName").asText()).isEqualTo("ERT News");
         assertThat(input.path("candidateSemanticEvents").get(0).path("id").asText()).isEqualTo("event-456");
+    }
+
+    @Test
+    void ignoresMatchedSemanticEventIdWhenClassificationCreatesNewEvent() {
+        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
+                {
+                  "primaryCategoryCode": "politics",
+                  "categoryCodes": ["politics"],
+                  "semanticKey": "greek parliament approves new migration bill",
+                  "semanticKeyAction": "created_new",
+                  "matchedSemanticEventId": "event-456",
+                  "confidence": 0.91,
+                  "shouldPublish": true,
+                  "rejectionReason": null
+                }
+                """));
+        HttpOpenAiClient client = client(sender);
+
+        OpenAiClient.ClassificationResult result = client.classify(classificationRequest());
+
+        assertThat(result.response().semanticKeyAction().jsonValue()).isEqualTo("created_new");
+        assertThat(result.response().matchedSemanticEventId()).isNull();
+        assertThat(result.rawResponse()).contains("\"matchedSemanticEventId\": \"event-456\"");
+    }
+
+    @Test
+    void addsPrimaryCategoryToCategoryCodesWhenModelOmitsIt() {
+        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
+                {
+                  "primaryCategoryCode": "politics",
+                  "categoryCodes": [],
+                  "semanticKey": "greek parliament approves new migration bill",
+                  "semanticKeyAction": "matched_existing",
+                  "matchedSemanticEventId": "event-456",
+                  "confidence": 0.91,
+                  "shouldPublish": true,
+                  "rejectionReason": null
+                }
+                """));
+        HttpOpenAiClient client = client(sender);
+
+        OpenAiClient.ClassificationResult result = client.classify(classificationRequest());
+
+        assertThat(result.response().categoryCodes()).containsExactly("politics");
+    }
+
+    @Test
+    void defaultsRejectionReasonWhenNoSelectedCategoryIsPublishable() {
+        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
+                {
+                  "primaryCategoryCode": "politics",
+                  "categoryCodes": [],
+                  "semanticKey": "greek parliament approves new migration bill",
+                  "semanticKeyAction": "matched_existing",
+                  "matchedSemanticEventId": "event-456",
+                  "confidence": 0.91,
+                  "shouldPublish": false,
+                  "rejectionReason": null
+                }
+                """));
+        HttpOpenAiClient client = client(sender);
+
+        OpenAiClient.ClassificationResult result = client.classify(classificationRequest(List.of("weather")));
+
+        assertThat(result.response().categoryCodes()).containsExactly("politics");
+        assertThat(result.response().rejectionReason().name()).isEqualTo("NOT_PUBLISHABLE_CATEGORY");
     }
 
     @Test
@@ -94,8 +160,8 @@ class HttpOpenAiClientTest {
         assertThat(response.summary()).contains("migration bill");
         assertThat(sender.lastRequest()).satisfies(request ->
                 assertThat(requestBody(request)).contains(
-                        "target-language publication content",
-                        "GPT-5.5",
+                        "publisher of selected content",
+                        "gpt-5.5",
                         "semanticKey",
                         "maxSummaryCharacters",
                         "maxMessageCharacters"));
@@ -103,12 +169,19 @@ class HttpOpenAiClientTest {
 
     @Test
     void throwsForNonSuccessStatus() {
-        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(new FakeHttpResponse(429, "{}"));
+        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(new FakeHttpResponse(429, """
+                {
+                  "error": {
+                    "message": "The model `missing-model` does not exist or you do not have access to it."
+                  }
+                }
+                """));
         HttpOpenAiClient client = client(sender);
 
         assertThatThrownBy(() -> client.preparePublicationContent(publicationContentRequest()))
                 .isInstanceOf(OpenAiIntegrationException.class)
-                .hasMessageContaining("HTTP status 429");
+                .hasMessageContaining("HTTP status 429")
+                .hasMessageContaining("missing-model");
     }
 
     @Test
@@ -149,7 +222,7 @@ class HttpOpenAiClientTest {
     private OpenAiProperties properties() {
         return new OpenAiProperties(
                 "test-api-key",
-                new OpenAiProperties.Models("GPT5.5-mini", "GPT-5.5"),
+                new OpenAiProperties.Models("gpt-5.4-mini", "gpt-5.5"),
                 new OpenAiProperties.Prompts(
                         "classification-v1",
                         "editorial-rules-v1",
@@ -159,6 +232,10 @@ class HttpOpenAiClientTest {
     }
 
     private CategoryClassificationRequest classificationRequest() {
+        return classificationRequest(List.of("politics"));
+    }
+
+    private CategoryClassificationRequest classificationRequest(List<String> publishableCategoryCodes) {
         return new CategoryClassificationRequest(
                 new OpenAiNewsItemDto(
                         "Greek parliament approves new migration bill",
@@ -173,7 +250,7 @@ class HttpOpenAiClientTest {
                         new CategoryOptionDto(
                                 "weather",
                                 "Weather alerts, climate events, natural hazards")),
-                List.of("politics"),
+                publishableCategoryCodes,
                 List.of("For sports news, publish only items with concrete match results."),
                 List.of(new SemanticEventKeyCandidateDto(
                         "event-456",

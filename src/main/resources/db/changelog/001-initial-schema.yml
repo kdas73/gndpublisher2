@@ -228,6 +228,9 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
+                  name: publication_processed_at
+                  type: TIMESTAMP
+              - column:
                   name: rejection_reason
                   type: VARCHAR(100)
               - column:
@@ -753,6 +756,8 @@ databaseChangeLog:
                   name: source_id
               - column:
                   name: selected_for_publication
+              - column:
+                  name: publication_processed_at
         - createIndex:
             tableName: news_items
             indexName: idx_news_items_source_external_id
