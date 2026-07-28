@@ -2,6 +2,7 @@ package com.gnd.publisher.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -146,6 +147,33 @@ class PublicationServiceTest {
         });
         assertThat(context.newsItem().isSelectedForPublication()).isFalse();
         assertThat(context.newsItem().getPublicationProcessedAt()).isEqualTo(NOW);
+        verify(newsItemRepository).saveAll(List.of(context.newsItem()));
+    }
+
+    @Test
+    void continuesPublishingWhenChannelSyncFails() {
+        PublicationContext context = publicationContext();
+        doThrow(new RuntimeException("channel sync db unavailable"))
+                .when(telegramChannelSyncService).syncConfiguredChannels();
+        when(newsItemRepository.findBySelectedForPublicationTrueAndPublicationProcessedAtIsNullAndSemanticEventIsNotNull())
+                .thenReturn(List.of(context.newsItem()));
+        when(publicationContentService.preparePublicationContent(List.of(context.newsItem())))
+                .thenReturn(List.of(context.translation()));
+        when(translationRepository.findWithNewsItemById(300L)).thenReturn(Optional.of(context.translation()));
+        when(telegramRoutingService.publicationChannelsForLanguage("en")).thenReturn(List.of(context.channel()));
+        when(publicationRepository.existsBySemanticEvent_IdAndTelegramChannel_IdAndTargetLanguage(200L, 400L, "en"))
+                .thenReturn(false);
+        when(publicationRepository.saveAndFlush(any(Publication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(publicationRepository.save(any(Publication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(telegramMessageMapper.toMessage(context.translation(), context.channel()))
+                .thenReturn(new TelegramMessageDto("-100123456", "message"));
+        when(telegramBotClient.sendMessage(context.channel(), new TelegramMessageDto("-100123456", "message")))
+                .thenReturn(new TelegramSendResult("42", "https://t.me/gnd_news/42"));
+
+        List<Publication> publications = service().publishSelectedContent();
+
+        assertThat(publications).singleElement().satisfies(publication ->
+                assertThat(publication.getStatus().name()).isEqualTo("PUBLISHED"));
         verify(newsItemRepository).saveAll(List.of(context.newsItem()));
     }
 

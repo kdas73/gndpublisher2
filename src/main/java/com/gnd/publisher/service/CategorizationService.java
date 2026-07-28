@@ -29,6 +29,8 @@ import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
 import com.gnd.publisher.exception.OpenAiIntegrationException;
 import com.gnd.publisher.integration.openai.OpenAiCategorizer;
 import com.gnd.publisher.integration.openai.PromptLoader;
+import com.gnd.publisher.logging.LogFields;
+import com.gnd.publisher.logging.LoggingContext;
 import com.gnd.publisher.repository.CategoryRepository;
 import com.gnd.publisher.repository.ClassificationRunRepository;
 import com.gnd.publisher.repository.NewsItemCategoryRepository;
@@ -130,7 +132,8 @@ public class CategorizationService {
             List<CategoryOptionDto> categoryOptions,
             List<String> editorialRules) {
         Instant classifiedAt = Instant.now(clock);
-        try {
+        try (LoggingContext.Scope ignored =
+                LoggingContext.put(LogFields.NEWS_ITEM_ID, String.valueOf(newsItem.getId()))) {
             CandidateSemanticEvents candidates = semanticEventGroupingService.recentCandidates();
             CategoryClassificationRequest request = new CategoryClassificationRequest(
                     newsItemDto(newsItem),

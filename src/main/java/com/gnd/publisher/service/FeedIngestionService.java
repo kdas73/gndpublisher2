@@ -4,13 +4,15 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import com.gnd.publisher.domain.model.NewsItem;
 import com.gnd.publisher.domain.model.RssSource;
 import com.gnd.publisher.dto.rss.RssFeedItemDto;
 import com.gnd.publisher.integration.rss.RssClient;
 import com.gnd.publisher.integration.rss.RssFeedParser;
+import com.gnd.publisher.logging.LogFields;
+import com.gnd.publisher.logging.LoggingContext;
+import com.gnd.publisher.logging.RunIdGenerator;
 import com.gnd.publisher.repository.NewsItemRepository;
 import com.gnd.publisher.repository.RssSourceRepository;
 
@@ -86,7 +88,7 @@ public class FeedIngestionService {
     }
 
     private void ingestSource(RssSource source, String processingRunId) {
-        try {
+        try (LoggingContext.Scope ignored = LoggingContext.put(LogFields.SOURCE_ID, String.valueOf(source.getId()))) {
             String xml = rssClient.fetch(URI.create(source.getUrl()));
             List<RssFeedItemDto> feedItems = rssFeedParser.parse(xml);
             Instant fetchedAt = Instant.now(clock);
@@ -111,6 +113,6 @@ public class FeedIngestionService {
     }
 
     private String processingRunId() {
-        return "ingestion-" + Instant.now(clock) + "-" + UUID.randomUUID().toString().substring(0, 8);
+        return RunIdGenerator.generate("ingestion", clock);
     }
 }

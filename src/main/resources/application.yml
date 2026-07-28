@@ -16,11 +16,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
       probes:
         enabled: true
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} [runId=%X{runId:-}] - %msg%n"
 
 gnd:
   profile: ${GND_PROFILE:local}

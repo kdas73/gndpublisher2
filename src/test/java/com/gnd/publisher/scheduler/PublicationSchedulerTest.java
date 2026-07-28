@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.gnd.publisher.config.SchedulerProperties;
 import com.gnd.publisher.config.SchedulerProperties.ScheduledJob;
+import com.gnd.publisher.logging.PipelineRunSupport;
 import com.gnd.publisher.service.PublicationService;
 
 import org.junit.jupiter.api.Test;
@@ -18,9 +19,12 @@ class PublicationSchedulerTest {
     @Mock
     private PublicationService publicationService;
 
+    private final PipelineRunSupport pipelineRunSupport = new PipelineRunSupport();
+
     @Test
     void callsPublicationServiceWhenPublicationJobIsEnabled() {
-        PublicationScheduler scheduler = new PublicationScheduler(publicationService, schedulerProperties(true));
+        PublicationScheduler scheduler =
+                new PublicationScheduler(publicationService, schedulerProperties(true), pipelineRunSupport);
 
         scheduler.publishSelectedContent();
 
@@ -29,7 +33,8 @@ class PublicationSchedulerTest {
 
     @Test
     void doesNotCallPublicationServiceWhenPublicationJobIsDisabled() {
-        PublicationScheduler scheduler = new PublicationScheduler(publicationService, schedulerProperties(false));
+        PublicationScheduler scheduler =
+                new PublicationScheduler(publicationService, schedulerProperties(false), pipelineRunSupport);
 
         scheduler.publishSelectedContent();
 

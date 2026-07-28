@@ -217,6 +217,25 @@ class HttpOpenAiClientTest {
     }
 
     @Test
+    void doesNotLeakApiKeyOrRequestPayloadIntoExceptionMessageOnHttpError() {
+        FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(new FakeHttpResponse(429, """
+                {
+                  "error": {
+                    "message": "The model `missing-model` does not exist or you do not have access to it."
+                  }
+                }
+                """));
+        HttpOpenAiClient client = client(sender);
+
+        assertThatThrownBy(() -> client.classify(classificationRequest()))
+                .isInstanceOf(OpenAiIntegrationException.class)
+                .extracting(Throwable::getMessage, org.assertj.core.api.InstanceOfAssertFactories.STRING)
+                .doesNotContain("test-api-key")
+                .doesNotContain("Bearer")
+                .doesNotContain("Greek parliament approves new migration bill");
+    }
+
+    @Test
     void throwsForInvalidClassificationResponse() {
         FakeOpenAiHttpSender sender = new FakeOpenAiHttpSender(openAiResponse("""
                 {

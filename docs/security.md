@@ -56,6 +56,7 @@ Expected secrets include:
 - Be careful when logging Telegram API errors because request payloads may contain channel identifiers or message content.
 - Be careful when logging OpenAI requests and responses because they may contain news text, generated summaries, translated content, or category decisions.
 - Log enough context for troubleshooting without exposing credentials.
+- See [`observability.md`](observability.md) for the enforced logging/error-handling conventions and the tests that guard against secret/payload leakage.
 
 ## Publishing Safety
 

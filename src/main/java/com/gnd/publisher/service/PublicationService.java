@@ -3,6 +3,7 @@ package com.gnd.publisher.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.gnd.publisher.domain.model.NewsItem;
@@ -12,6 +13,8 @@ import com.gnd.publisher.domain.model.Translation;
 import com.gnd.publisher.dto.telegram.TelegramMessageDto;
 import com.gnd.publisher.dto.telegram.TelegramSendResult;
 import com.gnd.publisher.integration.telegram.TelegramBotClient;
+import com.gnd.publisher.logging.LogFields;
+import com.gnd.publisher.logging.LoggingContext;
 import com.gnd.publisher.mapper.TelegramMessageMapper;
 import com.gnd.publisher.repository.NewsItemRepository;
 import com.gnd.publisher.repository.PublicationRepository;
@@ -90,7 +93,13 @@ public class PublicationService {
     }
 
     public List<Publication> publishSelectedContent() {
-        telegramChannelSyncService.syncConfiguredChannels();
+        try {
+            telegramChannelSyncService.syncConfiguredChannels();
+        } catch (RuntimeException exception) {
+            LOGGER.warn(
+                    "Failed to sync configured Telegram channels; continuing with existing channel configuration",
+                    exception);
+        }
         List<NewsItem> selectedItems = newsItemRepository
                 .findBySelectedForPublicationTrueAndPublicationProcessedAtIsNullAndSemanticEventIsNotNull();
         if (selectedItems.isEmpty()) {
@@ -139,7 +148,9 @@ public class PublicationService {
 
         Publication publication = pendingPublication.get();
         Long semanticEventId = translation.getSemanticEvent().getId();
-        try {
+        try (LoggingContext.Scope ignored = LoggingContext.put(Map.of(
+                LogFields.SEMANTIC_EVENT_ID, String.valueOf(semanticEventId),
+                LogFields.PUBLICATION_ID, String.valueOf(publication.getId())))) {
             TelegramMessageDto message = telegramMessageMapper.toMessage(translation, channel);
             TelegramSendResult result = telegramBotClient.sendMessage(channel, message);
             publication.markPublished(result.messageId(), result.messageUrl(), Instant.now(clock));

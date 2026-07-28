@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.gnd.publisher.config.SchedulerProperties;
 import com.gnd.publisher.config.SchedulerProperties.ScheduledJob;
+import com.gnd.publisher.logging.PipelineRunSupport;
 import com.gnd.publisher.service.FeedIngestionService;
 
 import org.junit.jupiter.api.Test;
@@ -18,9 +19,12 @@ class FeedIngestionSchedulerTest {
     @Mock
     private FeedIngestionService feedIngestionService;
 
+    private final PipelineRunSupport pipelineRunSupport = new PipelineRunSupport();
+
     @Test
     void callsIngestionServiceWhenIngestionJobIsEnabled() {
-        FeedIngestionScheduler scheduler = new FeedIngestionScheduler(feedIngestionService, schedulerProperties(true));
+        FeedIngestionScheduler scheduler =
+                new FeedIngestionScheduler(feedIngestionService, schedulerProperties(true), pipelineRunSupport);
 
         scheduler.ingestFeeds();
 
@@ -29,7 +33,8 @@ class FeedIngestionSchedulerTest {
 
     @Test
     void doesNotCallIngestionServiceWhenIngestionJobIsDisabled() {
-        FeedIngestionScheduler scheduler = new FeedIngestionScheduler(feedIngestionService, schedulerProperties(false));
+        FeedIngestionScheduler scheduler =
+                new FeedIngestionScheduler(feedIngestionService, schedulerProperties(false), pipelineRunSupport);
 
         scheduler.ingestFeeds();
 
