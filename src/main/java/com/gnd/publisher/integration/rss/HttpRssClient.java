@@ -21,6 +21,7 @@ public class HttpRssClient implements RssClient {
     public HttpRssClient() {
         this(HttpClient.newBuilder()
                 .connectTimeout(REQUEST_TIMEOUT)
+                .followRedirects(HttpClient.Redirect.NORMAL)
                 .build());
     }
 

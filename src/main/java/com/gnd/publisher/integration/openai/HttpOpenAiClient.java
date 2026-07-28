@@ -20,13 +20,17 @@ import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
 import com.gnd.publisher.dto.openai.ClassificationRejectionReasonDto;
 import com.gnd.publisher.dto.openai.PublicationContentRequest;
 import com.gnd.publisher.dto.openai.PublicationContentResponse;
+import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
 import com.gnd.publisher.exception.OpenAiIntegrationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class HttpOpenAiClient implements OpenAiClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpOpenAiClient.class);
     private static final URI RESPONSES_URI = URI.create("https://api.openai.com/v1/responses");
     private static final int MAX_ERROR_BODY_LENGTH = 1000;
 
@@ -256,14 +260,23 @@ public class HttpOpenAiClient implements OpenAiClient {
             CategoryClassificationResponse response) {
         List<String> categoryCodes = normalizedCategoryCodes(response);
         String matchedSemanticEventId = response.matchedSemanticEventId();
-        if (response.semanticKeyAction() != null
-                && "created_new".equals(response.semanticKeyAction().jsonValue())) {
+        SemanticKeyActionDto semanticKeyAction = response.semanticKeyAction();
+        if (semanticKeyAction != null && "created_new".equals(semanticKeyAction.jsonValue())) {
+            matchedSemanticEventId = null;
+        }
+        if (semanticKeyAction != null
+                && "matched_existing".equals(semanticKeyAction.jsonValue())
+                && !isValidCandidateId(request, matchedSemanticEventId)) {
+            LOGGER.warn("OpenAI returned matched_existing without a valid matchedSemanticEventId; "
+                    + "falling back to created_new. matchedSemanticEventId={}", matchedSemanticEventId);
+            semanticKeyAction = SemanticKeyActionDto.CREATED_NEW;
             matchedSemanticEventId = null;
         }
         boolean shouldPublish = normalizedShouldPublish(request, response, categoryCodes);
         ClassificationRejectionReasonDto rejectionReason = normalizedRejectionReason(request, response, categoryCodes);
 
         if (!categoryCodes.equals(response.categoryCodes())
+                || semanticKeyAction != response.semanticKeyAction()
                 || !Objects.equals(matchedSemanticEventId, response.matchedSemanticEventId())
                 || shouldPublish != response.shouldPublish()
                 || rejectionReason != response.rejectionReason()) {
@@ -271,13 +284,21 @@ public class HttpOpenAiClient implements OpenAiClient {
                     response.primaryCategoryCode(),
                     categoryCodes,
                     response.semanticKey(),
-                    response.semanticKeyAction(),
+                    semanticKeyAction,
                     matchedSemanticEventId,
                     response.confidence(),
                     shouldPublish,
                     rejectionReason);
         }
         return response;
+    }
+
+    private boolean isValidCandidateId(CategoryClassificationRequest request, String matchedSemanticEventId) {
+        if (matchedSemanticEventId == null || matchedSemanticEventId.isBlank()) {
+            return false;
+        }
+        return request.candidateSemanticEvents().stream()
+                .anyMatch(candidate -> candidate.id().equals(matchedSemanticEventId));
     }
 
     private List<String> normalizedCategoryCodes(CategoryClassificationResponse response) {
