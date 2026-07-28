@@ -10,4 +10,6 @@ public interface ImportantNewsDigestItemRepository extends JpaRepository<Importa
             Long semanticEventId,
             Long telegramChannelId,
             String targetLanguage);
+
+    void deleteByImportantNewsDigestPost_Id(Long importantNewsDigestPostId);
 }

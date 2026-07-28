@@ -13,4 +13,6 @@ public interface TranslationRepository extends JpaRepository<Translation, Long> 
 
     @EntityGraph(attributePaths = {"semanticEvent", "semanticEvent.category", "newsItem", "newsItem.source"})
     Optional<Translation> findWithNewsItemById(Long id);
+
+    void deleteByNewsItem_Id(Long newsItemId);
 }
