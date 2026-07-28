@@ -1,0 +1,77 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-seed-additional-rss-sources
+      author: codex
+      changes:
+        - insert:
+            tableName: rss_sources
+            columns:
+              - column:
+                  name: code
+                  value: to-vima
+              - column:
+                  name: name
+                  value: To Vima
+              - column:
+                  name: url
+                  value: https://www.tovima.gr/feed/
+              - column:
+                  name: language
+                  value: el
+              - column:
+                  name: enabled
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueDate: 2026-07-20T00:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2026-07-20T00:00:00
+        - insert:
+            tableName: rss_sources
+            columns:
+              - column:
+                  name: code
+                  value: eleftheros-typos
+              - column:
+                  name: name
+                  value: Eleftheros Typos
+              - column:
+                  name: url
+                  value: https://eleftherostypos.gr/feed
+              - column:
+                  name: language
+                  value: el
+              - column:
+                  name: enabled
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueDate: 2026-07-20T00:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2026-07-20T00:00:00
+        - insert:
+            tableName: rss_sources
+            columns:
+              - column:
+                  name: code
+                  value: avgi
+              - column:
+                  name: name
+                  value: Avgi
+              - column:
+                  name: url
+                  value: https://www.avgi.gr/rss.xml
+              - column:
+                  name: language
+                  value: el
+              - column:
+                  name: enabled
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueDate: 2026-07-20T00:00:00
+              - column:
+                  name: updated_at
+                  valueDate: 2026-07-20T00:00:00

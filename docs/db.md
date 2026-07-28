@@ -45,8 +45,11 @@ Baseline seed sources:
 
 - `kathimerini`: Kathimerini, `https://feeds.feedburner.com/kathimerini/DJpy`
 - `ta-nea`: Ta Nea, `https://www.tanea.gr/feed/`
+- `to-vima`: To Vima, `https://www.tovima.gr/feed/`
+- `eleftheros-typos`: Eleftheros Typos, `https://eleftherostypos.gr/feed`
+- `avgi`: Avgi, `https://www.avgi.gr/rss.xml`
 
-Both baseline sources are initialized with `language = el` and `enabled = true`.
+All baseline sources are initialized with `language = el` and `enabled = true`.
 
 ### news_items
 

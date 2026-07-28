@@ -51,7 +51,7 @@ class SqliteLiquibaseMigrationTest {
             assertThat(indexExists(connection, "uk_publications_event_channel_language")).isTrue();
             assertThat(columnExists(connection, "rss_sources", "code")).isTrue();
 
-            assertThat(countRows(connection, "rss_sources")).isEqualTo(2);
+            assertThat(countRows(connection, "rss_sources")).isEqualTo(5);
             assertThat(countRows(
                     connection,
                     "rss_sources",
@@ -62,6 +62,22 @@ class SqliteLiquibaseMigrationTest {
                     connection,
                     "rss_sources",
                     "code = 'ta-nea' AND url = 'https://www.tanea.gr/feed/' AND language = 'el' AND enabled = 1"))
+                    .isEqualTo(1);
+            assertThat(countRows(
+                    connection,
+                    "rss_sources",
+                    "code = 'to-vima' AND url = 'https://www.tovima.gr/feed/' AND language = 'el' AND enabled = 1"))
+                    .isEqualTo(1);
+            assertThat(countRows(
+                    connection,
+                    "rss_sources",
+                    "code = 'eleftheros-typos' AND url = 'https://eleftherostypos.gr/feed' "
+                            + "AND language = 'el' AND enabled = 1"))
+                    .isEqualTo(1);
+            assertThat(countRows(
+                    connection,
+                    "rss_sources",
+                    "code = 'avgi' AND url = 'https://www.avgi.gr/rss.xml' AND language = 'el' AND enabled = 1"))
                     .isEqualTo(1);
         }
     }
