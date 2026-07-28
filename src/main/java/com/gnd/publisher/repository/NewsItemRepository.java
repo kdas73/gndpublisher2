@@ -48,4 +48,13 @@ public interface NewsItemRepository extends JpaRepository<NewsItem, Long> {
               )
             """)
     List<SourceQuotaCandidate> findSourceQuotaCandidates(@Param("processingRunId") String processingRunId);
+
+    @Query("""
+            select new com.gnd.publisher.repository.SemanticEventSourceItemCount(item.semanticEvent.id, count(item))
+            from NewsItem item
+            where item.semanticEvent.id in :semanticEventIds
+            group by item.semanticEvent.id
+            """)
+    List<SemanticEventSourceItemCount> countBySemanticEventIds(
+            @Param("semanticEventIds") List<Long> semanticEventIds);
 }

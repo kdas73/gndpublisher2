@@ -55,7 +55,69 @@ public class ImportantNewsDigestPost extends AuditableEntity {
     protected ImportantNewsDigestPost() {
     }
 
+    private ImportantNewsDigestPost(
+            TelegramChannel telegramChannel,
+            String targetLanguage,
+            int duplicateThreshold) {
+        this.telegramChannel = telegramChannel;
+        this.targetLanguage = targetLanguage;
+        this.duplicateThreshold = duplicateThreshold;
+        this.status = PublicationStatus.PENDING;
+    }
+
+    public static ImportantNewsDigestPost pending(
+            TelegramChannel telegramChannel,
+            String targetLanguage,
+            int duplicateThreshold) {
+        return new ImportantNewsDigestPost(telegramChannel, targetLanguage, duplicateThreshold);
+    }
+
+    public void markPublished(String telegramMessageId, String telegramMessageUrl, Instant publishedAt) {
+        this.telegramMessageId = telegramMessageId;
+        this.telegramMessageUrl = telegramMessageUrl;
+        this.publishedAt = publishedAt;
+        this.errorMessage = null;
+        this.status = PublicationStatus.PUBLISHED;
+    }
+
+    public void markFailed(String errorMessage) {
+        this.errorMessage = errorMessage;
+        this.status = PublicationStatus.FAILED;
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public TelegramChannel getTelegramChannel() {
+        return telegramChannel;
+    }
+
+    public String getTargetLanguage() {
+        return targetLanguage;
+    }
+
+    public int getDuplicateThreshold() {
+        return duplicateThreshold;
+    }
+
+    public String getTelegramMessageId() {
+        return telegramMessageId;
+    }
+
+    public String getTelegramMessageUrl() {
+        return telegramMessageUrl;
+    }
+
+    public PublicationStatus getStatus() {
+        return status;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public Instant getPublishedAt() {
+        return publishedAt;
     }
 }

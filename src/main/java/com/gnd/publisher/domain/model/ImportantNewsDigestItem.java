@@ -59,7 +59,86 @@ public class ImportantNewsDigestItem {
     protected ImportantNewsDigestItem() {
     }
 
+    private ImportantNewsDigestItem(
+            ImportantNewsDigestPost importantNewsDigestPost,
+            SemanticNewsEvent semanticEvent,
+            Publication publication,
+            TelegramChannel telegramChannel,
+            String targetLanguage,
+            String title,
+            String publicationUrl,
+            int sourceItemCount,
+            Instant createdAt) {
+        this.importantNewsDigestPost = importantNewsDigestPost;
+        this.semanticEvent = semanticEvent;
+        this.publication = publication;
+        this.telegramChannel = telegramChannel;
+        this.targetLanguage = targetLanguage;
+        this.title = title;
+        this.publicationUrl = publicationUrl;
+        this.sourceItemCount = sourceItemCount;
+        this.createdAt = createdAt;
+    }
+
+    public static ImportantNewsDigestItem create(
+            ImportantNewsDigestPost importantNewsDigestPost,
+            SemanticNewsEvent semanticEvent,
+            Publication publication,
+            TelegramChannel telegramChannel,
+            String targetLanguage,
+            String title,
+            String publicationUrl,
+            int sourceItemCount,
+            Instant createdAt) {
+        return new ImportantNewsDigestItem(
+                importantNewsDigestPost,
+                semanticEvent,
+                publication,
+                telegramChannel,
+                targetLanguage,
+                title,
+                publicationUrl,
+                sourceItemCount,
+                createdAt);
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public ImportantNewsDigestPost getImportantNewsDigestPost() {
+        return importantNewsDigestPost;
+    }
+
+    public SemanticNewsEvent getSemanticEvent() {
+        return semanticEvent;
+    }
+
+    public Publication getPublication() {
+        return publication;
+    }
+
+    public TelegramChannel getTelegramChannel() {
+        return telegramChannel;
+    }
+
+    public String getTargetLanguage() {
+        return targetLanguage;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getPublicationUrl() {
+        return publicationUrl;
+    }
+
+    public int getSourceItemCount() {
+        return sourceItemCount;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 }
