@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.gnd.publisher.config.SchedulerProperties;
 import com.gnd.publisher.config.SchedulerProperties.ScheduledJob;
+import com.gnd.publisher.logging.PipelineRunSupport;
 import com.gnd.publisher.service.ImportantNewsDigestService;
 
 import org.junit.jupiter.api.Test;
@@ -18,10 +19,12 @@ class ImportantNewsDigestSchedulerTest {
     @Mock
     private ImportantNewsDigestService importantNewsDigestService;
 
+    private final PipelineRunSupport pipelineRunSupport = new PipelineRunSupport();
+
     @Test
     void callsDigestServiceWhenDigestJobIsEnabled() {
-        ImportantNewsDigestScheduler scheduler =
-                new ImportantNewsDigestScheduler(importantNewsDigestService, schedulerProperties(true));
+        ImportantNewsDigestScheduler scheduler = new ImportantNewsDigestScheduler(
+                importantNewsDigestService, schedulerProperties(true), pipelineRunSupport);
 
         scheduler.publishImportantNewsDigest();
 
@@ -30,8 +33,8 @@ class ImportantNewsDigestSchedulerTest {
 
     @Test
     void doesNotCallDigestServiceWhenDigestJobIsDisabled() {
-        ImportantNewsDigestScheduler scheduler =
-                new ImportantNewsDigestScheduler(importantNewsDigestService, schedulerProperties(false));
+        ImportantNewsDigestScheduler scheduler = new ImportantNewsDigestScheduler(
+                importantNewsDigestService, schedulerProperties(false), pipelineRunSupport);
 
         scheduler.publishImportantNewsDigest();
 

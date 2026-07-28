@@ -335,4 +335,4 @@ Liquibase is responsible for database initialization and schema updates.
 - Category prompt design and structured output format.
 - Retry policy and dead-letter handling.
 - Whether cleanup should hard-delete records or archive them first.
-- Observability: logs, metrics, and health checks.
+- Observability: logs, metrics, and health checks - baseline conventions are documented in [`observability.md`](observability.md).

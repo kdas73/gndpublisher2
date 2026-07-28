@@ -72,6 +72,22 @@ class HttpTelegramBotClientTest {
                 .hasMessageContaining("chat not found");
     }
 
+    @Test
+    void doesNotLeakBotTokenIntoExceptionMessageOnTelegramError() {
+        FakeTelegramHttpSender sender = new FakeTelegramHttpSender(new FakeHttpResponse(200, """
+                {
+                  "ok": false,
+                  "description": "Bad Request: chat not found"
+                }
+                """));
+        HttpTelegramBotClient client = client(sender);
+
+        assertThatThrownBy(() -> client.sendMessage(channel(), new TelegramMessageDto("-100123456", "Hello")))
+                .isInstanceOf(TelegramPublishException.class)
+                .extracting(Throwable::getMessage, org.assertj.core.api.InstanceOfAssertFactories.STRING)
+                .doesNotContain("test-token");
+    }
+
     private HttpTelegramBotClient client(TelegramHttpSender sender) {
         return new HttpTelegramBotClient(
                 new TelegramProperties(

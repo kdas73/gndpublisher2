@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.gnd.publisher.config.SchedulerProperties;
 import com.gnd.publisher.config.SchedulerProperties.ScheduledJob;
+import com.gnd.publisher.logging.PipelineRunSupport;
 import com.gnd.publisher.service.CleanupService;
 
 import org.junit.jupiter.api.Test;
@@ -18,9 +19,11 @@ class CleanupSchedulerTest {
     @Mock
     private CleanupService cleanupService;
 
+    private final PipelineRunSupport pipelineRunSupport = new PipelineRunSupport();
+
     @Test
     void callsCleanupServiceWhenCleanupJobIsEnabled() {
-        CleanupScheduler scheduler = new CleanupScheduler(cleanupService, schedulerProperties(true));
+        CleanupScheduler scheduler = new CleanupScheduler(cleanupService, schedulerProperties(true), pipelineRunSupport);
 
         scheduler.runCleanup();
 
@@ -29,7 +32,7 @@ class CleanupSchedulerTest {
 
     @Test
     void doesNotCallCleanupServiceWhenCleanupJobIsDisabled() {
-        CleanupScheduler scheduler = new CleanupScheduler(cleanupService, schedulerProperties(false));
+        CleanupScheduler scheduler = new CleanupScheduler(cleanupService, schedulerProperties(false), pipelineRunSupport);
 
         scheduler.runCleanup();
 
