@@ -1,5 +1,6 @@
 package com.gnd.publisher.repository;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.gnd.publisher.domain.enums.ClassificationStatus;
@@ -57,4 +58,16 @@ public interface NewsItemRepository extends JpaRepository<NewsItem, Long> {
             """)
     List<SemanticEventSourceItemCount> countBySemanticEventIds(
             @Param("semanticEventIds") List<Long> semanticEventIds);
+
+    @Query("""
+            select item from NewsItem item
+            where item.fetchedAt < :cutoff
+              and item.classificationStatus <> com.gnd.publisher.domain.enums.ClassificationStatus.PENDING
+              and not (item.selectedForPublication = true and item.publicationProcessedAt is null)
+              and not exists (
+                  select 1 from Publication publication
+                  where publication.newsItem = item
+              )
+            """)
+    List<NewsItem> findCleanupCandidates(@Param("cutoff") Instant cutoff);
 }
