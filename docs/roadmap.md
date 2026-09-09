@@ -19,6 +19,7 @@ This roadmap breaks the implementation into small, independently reviewable task
 13. [Cleanup Service](tasks/013-cleanup-service.md)
 14. [Docker And Deployment Skeleton](tasks/014-docker-deployment-skeleton.md)
 15. [Observability And Error Handling](tasks/015-observability-error-handling.md)
+16. [Null Pointer Safety Review](tasks/016-null-pointer-safety-review.md)
 
 ## Suggested Order
 
