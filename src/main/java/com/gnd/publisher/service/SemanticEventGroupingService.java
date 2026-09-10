@@ -8,12 +8,12 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.gnd.publisher.config.OpenAiProperties;
+import com.gnd.publisher.config.ClassificationProperties;
 import com.gnd.publisher.domain.model.Category;
 import com.gnd.publisher.domain.model.SemanticNewsEvent;
-import com.gnd.publisher.dto.openai.SemanticEventKeyCandidateDto;
-import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
-import com.gnd.publisher.exception.OpenAiIntegrationException;
+import com.gnd.publisher.dto.llm.SemanticEventKeyCandidateDto;
+import com.gnd.publisher.dto.llm.SemanticKeyActionDto;
+import com.gnd.publisher.exception.LlmIntegrationException;
 import com.gnd.publisher.repository.SemanticNewsEventRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,28 +23,28 @@ import org.springframework.stereotype.Service;
 public class SemanticEventGroupingService {
 
     private final SemanticNewsEventRepository semanticNewsEventRepository;
-    private final OpenAiProperties openAiProperties;
+    private final ClassificationProperties classificationProperties;
     private final Clock clock;
 
     @Autowired
     public SemanticEventGroupingService(
             SemanticNewsEventRepository semanticNewsEventRepository,
-            OpenAiProperties openAiProperties) {
-        this(semanticNewsEventRepository, openAiProperties, Clock.systemUTC());
+            ClassificationProperties classificationProperties) {
+        this(semanticNewsEventRepository, classificationProperties, Clock.systemUTC());
     }
 
     SemanticEventGroupingService(
             SemanticNewsEventRepository semanticNewsEventRepository,
-            OpenAiProperties openAiProperties,
+            ClassificationProperties classificationProperties,
             Clock clock) {
         this.semanticNewsEventRepository = semanticNewsEventRepository;
-        this.openAiProperties = openAiProperties;
+        this.classificationProperties = classificationProperties;
         this.clock = clock;
     }
 
     public CandidateSemanticEvents recentCandidates() {
         Instant lookupWindowEndedAt = Instant.now(clock);
-        Instant lookupWindowStartedAt = lookupWindowEndedAt.minus(openAiProperties.semanticEventLookupWindow());
+        Instant lookupWindowStartedAt = lookupWindowEndedAt.minus(classificationProperties.semanticEventLookupWindow());
         List<SemanticNewsEvent> events = semanticNewsEventRepository
                 .findByLastSeenAtGreaterThanEqualOrderByLastSeenAtDesc(lookupWindowStartedAt);
         List<SemanticEventKeyCandidateDto> candidateDtos = events.stream()
@@ -68,7 +68,7 @@ public class SemanticEventGroupingService {
             Instant seenAt) {
         if (action == SemanticKeyActionDto.MATCHED_EXISTING) {
             SemanticNewsEvent event = Optional.ofNullable(candidates.eventsById().get(matchedSemanticEventId))
-                    .orElseThrow(() -> new OpenAiIntegrationException(
+                    .orElseThrow(() -> new LlmIntegrationException(
                             "matchedSemanticEventId was not present in recent candidates"));
             event.markSeen(seenAt);
             event.setCategoryIfMissing(primaryCategory);

@@ -39,6 +39,46 @@ Equivalent Unix command:
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
+### Ollama Profile
+
+Profile name: `ollama`
+
+This is a provider overlay, not a runtime profile: it selects the `ollama` provider for both LLM use
+cases and is combined with a runtime profile.
+
+Prerequisites:
+
+```powershell
+ollama pull translategemma:4b
+ollama list
+```
+
+Ollama must be listening on `http://localhost:11434`, which is the default. Point
+`gnd.llm.ollama.base-url` elsewhere only at an internal host; see [`security.md`](security.md).
+
+Run command:
+
+```powershell
+.\gradlew.bat bootRun --args='--spring.profiles.active=local,ollama'
+```
+
+Notes:
+
+- No OpenAI API key is required when both use cases target Ollama.
+- `translategemma:4b` is translation-specialised, so it suits publication content better than
+  classification. The two use-case models are independent, so point
+  `gnd.llm.categorization.model` at a general instruct model if classification quality matters:
+
+  ```powershell
+  $env:GND_OLLAMA_CATEGORIZATION_MODEL = "qwen2.5:7b-instruct"
+  ```
+
+- To switch only one use case, set `GND_LLM_CATEGORIZATION_PROVIDER` or
+  `GND_LLM_PUBLICATION_CONTENT_PROVIDER` instead of activating this profile. Provider selection
+  takes effect on restart and is deliberately not hot-swappable.
+- The Ollama read timeout defaults to 300s because a cold model load plus schema-constrained
+  generation routinely exceeds a minute.
+
 ### Production Profile
 
 Profile name: `prod`
@@ -65,7 +105,7 @@ See `docs/db.md` for the database model and migration notes.
 - Build the application with Gradle.
 - Package the application as a Docker image.
 - Deploy the Docker image to a Kubernetes service on AWS.
-- Provide the active profile, database URL, OpenAI settings, Telegram settings, and other runtime configuration through Kubernetes/AWS deployment configuration.
+- Provide the active profile, database URL, LLM provider settings, Telegram settings, and other runtime configuration through Kubernetes/AWS deployment configuration.
 - Do not store cloud secrets in the Docker image or committed manifests.
 
 ## Secrets
@@ -109,12 +149,12 @@ Unit test rules:
 - Test services with mocked repositories and mocked integration clients.
 - Test schedulers minimally: verify that a scheduler calls the expected service method.
 - Test mappers, validators, and utility classes as pure unit tests.
-- Do not call real RSS feeds, OpenAI, Telegram, AWS, PostgreSQL, or other external services from unit tests.
+- Do not call real RSS feeds, LLM providers (hosted or local, including Ollama), Telegram, AWS, PostgreSQL, or other external services from unit tests.
 
 Integration and contract test rules:
 
-- Test OpenAI JSON contracts with fixture-based tests: request and response examples must deserialize into DTOs.
-- Test OpenAI, Telegram, and RSS clients with a mock HTTP server or contract tests, not live external APIs.
+- Test the LLM JSON contracts with fixture-based tests: request and response examples must deserialize into DTOs. The contracts are provider-neutral, so one set of fixtures covers every provider.
+- Test LLM, Telegram, and RSS clients with a fake HTTP sender or contract tests, not live external APIs. LLM adapter tests construct the adapter directly with `FakeLlmHttp.RecordingSender`; each provider adapter needs its own wire-format and secret-leak tests.
 - Test Liquibase and database behavior separately from unit tests.
 - Use Testcontainers for PostgreSQL integration tests when PostgreSQL-specific behavior matters.
 - Use the local SQLite profile for SQLite-specific integration checks.
@@ -134,7 +174,7 @@ src/test/java/com/gnd/publisher/
 Recommended fixture layout:
 
 ```text
-src/test/resources/fixtures/openai/
+src/test/resources/fixtures/llm/
   classification-request.json
   classification-response.json
   publication-content-request.json
@@ -154,7 +194,7 @@ src/test/resources/fixtures/openai/
 - Keep important news digest threshold, schedule, and destination channel configurable.
 - Keep target languages configurable.
 - Keep Telegram channel mapping configurable.
-- Keep OpenAI model names and prompt settings configurable.
+- Keep the LLM provider, model names, and prompt settings configurable per use case.
 - Keep Docker image and Kubernetes deployment configuration environment-specific.
 - Keep provider credentials outside committed files.
 

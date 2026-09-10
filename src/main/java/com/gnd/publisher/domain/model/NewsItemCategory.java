@@ -60,13 +60,17 @@ public class NewsItemCategory {
         this.createdAt = createdAt;
     }
 
+    /**
+     * @param matchedBy id of the LLM provider that produced the classification
+     */
     public static NewsItemCategory classifierMatch(
             NewsItem newsItem,
             Category category,
+            String matchedBy,
             String model,
             BigDecimal confidence,
             Instant createdAt) {
-        return new NewsItemCategory(newsItem, category, "OPENAI", model, confidence, createdAt);
+        return new NewsItemCategory(newsItem, category, matchedBy, model, confidence, createdAt);
     }
 
     public NewsItemCategoryId getId() {

@@ -20,7 +20,10 @@ This roadmap breaks the implementation into small, independently reviewable task
 14. [Docker And Deployment Skeleton](tasks/014-docker-deployment-skeleton.md)
 15. [Observability And Error Handling](tasks/015-observability-error-handling.md)
 16. [Null Pointer Safety Review](tasks/016-null-pointer-safety-review.md)
+17. [LLM Provider Abstraction](tasks/017-llm-provider-abstraction.md)
 
 ## Suggested Order
 
-Start with tasks 1-2 to create the project and testing foundation. Then implement configuration and database baseline in tasks 3-4. Implement the ingestion path through task 9 before adding publication content generation and Telegram publishing. Task 15 can be expanded as soon as the first application slices exist.
+Start with tasks 1-2 to create the project and testing foundation. Then implement configuration and database baseline in tasks 3-4. Implement the ingestion path through task 9 before adding publication content generation and Telegram publishing. Task 15 can be expanded as soon as the first application slices exist. Tasks 16-17 are cross-cutting reviews and refactors that run over the finished slices rather than adding a new slice.
+
+Task 7 built the integration layer against OpenAI directly. Task 17 replaced that with a provider-neutral LLM abstraction, so `docs/llm.md` and `docs/architecture.md` are the current reference; task documents 2-16 are kept unchanged as historical records of what was built at the time.

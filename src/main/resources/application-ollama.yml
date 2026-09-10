@@ -1,0 +1,10 @@
+# Points both LLM use cases at a local Ollama instance.
+# Combine with a runtime profile, for example: --spring.profiles.active=local,ollama
+gnd:
+  llm:
+    categorization:
+      provider: ollama
+      model: ${GND_OLLAMA_CATEGORIZATION_MODEL:translategemma:4b}
+    publication-content:
+      provider: ollama
+      model: ${GND_OLLAMA_PUBLICATION_CONTENT_MODEL:translategemma:4b}

@@ -155,19 +155,37 @@ gnd:
     target-language: ru
     channel-code: important-news-ru
     lookback-window: 7d
-  openai:
-    api-key: ${OPENAI_API_KEY:}
-    models:
-      categorization: gpt-5.4-mini
-      publication-content: gpt-5
+  classification:
+    semantic-event-lookup-window: 3d
+  llm:
+    # Provider selection is data: switching a use case needs only configuration and a restart.
+    categorization:
+      provider: ${GND_LLM_CATEGORIZATION_PROVIDER:openai}
+      model: ${GND_LLM_CATEGORIZATION_MODEL:gpt-5.4-mini}
+    publication-content:
+      provider: ${GND_LLM_PUBLICATION_CONTENT_PROVIDER:openai}
+      model: ${GND_LLM_PUBLICATION_CONTENT_MODEL:gpt-5}
     prompts:
       classification-version: classification-v1
       editorial-rules-version: editorial-rules-v1
       publication-content-version: publication-content-v1
-    timeouts:
-      connect: 5s
-      read: 60s
-    semantic-event-lookup-window: 3d
+    openai:
+      # Required only when a use case targets the openai provider.
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${GND_LLM_OPENAI_BASE_URL:https://api.openai.com/v1}
+      timeouts:
+        connect: 5s
+        read: 60s
+    ollama:
+      # Must resolve to an internal host: the Ollama API is unauthenticated.
+      base-url: ${GND_LLM_OLLAMA_BASE_URL:http://localhost:11434}
+      timeouts:
+        connect: 5s
+        # A cold model load plus constrained generation routinely exceeds a minute.
+        read: 300s
+      keep-alive: ${GND_LLM_OLLAMA_KEEP_ALIVE:10m}
+      options:
+        temperature: 0.0
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
     channels:

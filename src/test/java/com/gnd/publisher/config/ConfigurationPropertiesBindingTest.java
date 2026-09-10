@@ -37,9 +37,17 @@ class ConfigurationPropertiesBindingTest {
                 importantNewsDigestProperties());
         assertValid(digest);
 
-        OpenAiProperties openAi = bind("gnd.openai", OpenAiProperties.class, openAiProperties("test-api-key"));
-        assertValid(openAi);
-        assertThat(openAi.models().categorization()).isEqualTo("gpt-5.4-mini");
+        LlmProperties llm = bind("gnd.llm", LlmProperties.class, llmProperties("openai", "openai", "test-api-key"));
+        assertValid(llm);
+        assertThat(llm.categorization().model()).isEqualTo("gpt-5.4-mini");
+        assertThat(llm.ollama().baseUrl()).isEqualTo("http://localhost:11434");
+
+        ClassificationProperties classification = bind(
+                "gnd.classification",
+                ClassificationProperties.class,
+                Map.of("gnd.classification.semantic-event-lookup-window", "3d"));
+        assertValid(classification);
+        assertThat(classification.semanticEventLookupWindow()).isEqualTo(java.time.Duration.ofDays(3));
 
         TelegramProperties telegram = bind("gnd.telegram", TelegramProperties.class, telegramProperties("test-bot-token"));
         assertValid(telegram);
@@ -53,10 +61,25 @@ class ConfigurationPropertiesBindingTest {
     }
 
     @Test
-    void rejectsMissingOpenAiApiKey() {
-        OpenAiProperties properties = bind("gnd.openai", OpenAiProperties.class, openAiProperties(""));
+    void rejectsMissingOpenAiApiKeyWhenAUseCaseTargetsOpenAi() {
+        LlmProperties properties = bind("gnd.llm", LlmProperties.class, llmProperties("ollama", "openai", ""));
 
-        assertInvalidProperty(properties, "apiKey");
+        assertInvalidProperty(properties, "openAiApiKeyPresentWhenTargeted");
+    }
+
+    @Test
+    void acceptsMissingOpenAiApiKeyWhenEveryUseCaseTargetsOllama() {
+        LlmProperties properties = bind("gnd.llm", LlmProperties.class, llmProperties("ollama", "ollama", ""));
+
+        assertValid(properties);
+        assertThat(properties.readTimeout("ollama")).isEqualTo(java.time.Duration.ofSeconds(300));
+    }
+
+    @Test
+    void resolvesProviderProvidedCasingWhenCheckingTheOpenAiApiKey() {
+        LlmProperties properties = bind("gnd.llm", LlmProperties.class, llmProperties("OpenAI", "ollama", ""));
+
+        assertInvalidProperty(properties, "openAiApiKeyPresentWhenTargeted");
     }
 
     @Test
@@ -88,10 +111,10 @@ class ConfigurationPropertiesBindingTest {
 
     @Test
     void rejectsMissingEditorialRulesVersion() {
-        Map<String, String> values = openAiProperties("test-api-key");
-        values.remove("gnd.openai.prompts.editorial-rules-version");
+        Map<String, String> values = llmProperties("openai", "openai", "test-api-key");
+        values.remove("gnd.llm.prompts.editorial-rules-version");
 
-        OpenAiProperties properties = bind("gnd.openai", OpenAiProperties.class, values);
+        LlmProperties properties = bind("gnd.llm", LlmProperties.class, values);
 
         assertInvalidProperty(properties, "prompts.editorialRulesVersion");
     }
@@ -183,17 +206,31 @@ class ConfigurationPropertiesBindingTest {
         return values;
     }
 
-    private static Map<String, String> openAiProperties(String apiKey) {
+    /**
+     * The openai block is always present, mirroring application.yml, because an unset API key ships
+     * as an empty string rather than an absent block.
+     */
+    private static Map<String, String> llmProperties(
+            String categorizationProvider,
+            String publicationContentProvider,
+            String apiKey) {
         Map<String, String> values = new LinkedHashMap<>();
-        values.put("gnd.openai.api-key", apiKey);
-        values.put("gnd.openai.models.categorization", "gpt-5.4-mini");
-        values.put("gnd.openai.models.publication-content", "gpt-5.5");
-        values.put("gnd.openai.prompts.classification-version", "classification-v1");
-        values.put("gnd.openai.prompts.editorial-rules-version", "editorial-rules-v1");
-        values.put("gnd.openai.prompts.publication-content-version", "publication-content-v1");
-        values.put("gnd.openai.timeouts.connect", "5s");
-        values.put("gnd.openai.timeouts.read", "60s");
-        values.put("gnd.openai.semantic-event-lookup-window", "3d");
+        values.put("gnd.llm.categorization.provider", categorizationProvider);
+        values.put("gnd.llm.categorization.model", "gpt-5.4-mini");
+        values.put("gnd.llm.publication-content.provider", publicationContentProvider);
+        values.put("gnd.llm.publication-content.model", "gpt-5.5");
+        values.put("gnd.llm.prompts.classification-version", "classification-v1");
+        values.put("gnd.llm.prompts.editorial-rules-version", "editorial-rules-v1");
+        values.put("gnd.llm.prompts.publication-content-version", "publication-content-v1");
+        values.put("gnd.llm.openai.api-key", apiKey);
+        values.put("gnd.llm.openai.base-url", "https://api.openai.com/v1");
+        values.put("gnd.llm.openai.timeouts.connect", "5s");
+        values.put("gnd.llm.openai.timeouts.read", "60s");
+        values.put("gnd.llm.ollama.base-url", "http://localhost:11434");
+        values.put("gnd.llm.ollama.timeouts.connect", "5s");
+        values.put("gnd.llm.ollama.timeouts.read", "300s");
+        values.put("gnd.llm.ollama.keep-alive", "10m");
+        values.put("gnd.llm.ollama.options.temperature", "0.0");
         return values;
     }
 

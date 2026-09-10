@@ -11,10 +11,10 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
-import com.gnd.publisher.config.OpenAiProperties;
+import com.gnd.publisher.config.ClassificationProperties;
 import com.gnd.publisher.domain.model.Category;
 import com.gnd.publisher.domain.model.SemanticNewsEvent;
-import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
+import com.gnd.publisher.dto.llm.SemanticKeyActionDto;
 import com.gnd.publisher.repository.SemanticNewsEventRepository;
 import com.gnd.publisher.service.SemanticEventGroupingService.CandidateSemanticEvents;
 
@@ -106,20 +106,12 @@ class SemanticEventGroupingServiceTest {
     private SemanticEventGroupingService service() {
         return new SemanticEventGroupingService(
                 semanticNewsEventRepository,
-                openAiProperties(),
+                classificationProperties(),
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
-    private OpenAiProperties openAiProperties() {
-        return new OpenAiProperties(
-                "test-key",
-                new OpenAiProperties.Models("gpt-5.4-mini", "gpt-5.5"),
-                new OpenAiProperties.Prompts(
-                        "classification-v1",
-                        "editorial-rules-v1",
-                        "publication-content-v1"),
-                new OpenAiProperties.Timeouts(Duration.ofSeconds(5), Duration.ofSeconds(60)),
-                Duration.ofDays(3));
+    private ClassificationProperties classificationProperties() {
+        return new ClassificationProperties(Duration.ofDays(3));
     }
 
     private Category category() {

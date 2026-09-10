@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.gnd.publisher.config.CategoryProperties;
-import com.gnd.publisher.config.OpenAiProperties;
+import com.gnd.publisher.config.LlmProperties;
 import com.gnd.publisher.domain.enums.ClassificationStatus;
 import com.gnd.publisher.domain.enums.RejectionReason;
 import com.gnd.publisher.domain.enums.SemanticKeyAction;
@@ -25,13 +25,13 @@ import com.gnd.publisher.domain.model.NewsItem;
 import com.gnd.publisher.domain.model.NewsItemCategory;
 import com.gnd.publisher.domain.model.RssSource;
 import com.gnd.publisher.domain.model.SemanticNewsEvent;
-import com.gnd.publisher.dto.openai.CategoryClassificationRequest;
-import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
-import com.gnd.publisher.dto.openai.ClassificationRejectionReasonDto;
-import com.gnd.publisher.dto.openai.SemanticEventKeyCandidateDto;
-import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
-import com.gnd.publisher.integration.openai.OpenAiCategorizer;
-import com.gnd.publisher.integration.openai.PromptLoader;
+import com.gnd.publisher.dto.llm.CategoryClassificationRequest;
+import com.gnd.publisher.dto.llm.CategoryClassificationResponse;
+import com.gnd.publisher.dto.llm.ClassificationRejectionReasonDto;
+import com.gnd.publisher.dto.llm.SemanticEventKeyCandidateDto;
+import com.gnd.publisher.dto.llm.SemanticKeyActionDto;
+import com.gnd.publisher.integration.llm.LlmCategorizer;
+import com.gnd.publisher.integration.llm.PromptLoader;
 import com.gnd.publisher.repository.CategoryRepository;
 import com.gnd.publisher.repository.ClassificationRunRepository;
 import com.gnd.publisher.repository.NewsItemCategoryRepository;
@@ -54,7 +54,7 @@ class CategorizationServiceTest {
     private static final Instant NOW = Instant.parse("2026-07-01T12:00:00Z");
 
     @Mock
-    private OpenAiCategorizer openAiCategorizer;
+    private LlmCategorizer llmCategorizer;
 
     @Mock
     private SemanticEventGroupingService semanticEventGroupingService;
@@ -89,7 +89,7 @@ class CategorizationServiceTest {
                 true,
                 null);
         when(semanticEventGroupingService.recentCandidates()).thenReturn(candidates);
-        when(openAiCategorizer.classify(any(CategoryClassificationRequest.class)))
+        when(llmCategorizer.classify(any(CategoryClassificationRequest.class)))
                 .thenReturn(result(response));
         when(semanticEventGroupingService.group(
                 SemanticKeyActionDto.CREATED_NEW,
@@ -110,7 +110,7 @@ class CategorizationServiceTest {
 
         ArgumentCaptor<CategoryClassificationRequest> requestCaptor =
                 ArgumentCaptor.forClass(CategoryClassificationRequest.class);
-        verify(openAiCategorizer).classify(requestCaptor.capture());
+        verify(llmCategorizer).classify(requestCaptor.capture());
         assertThat(requestCaptor.getValue().newsItem().publishedAt()).isEqualTo("2026-07-01T10:00:00Z");
         assertThat(requestCaptor.getValue().editorialRules())
                 .containsExactly("Rule one.", "Rule two.");
@@ -147,7 +147,7 @@ class CategorizationServiceTest {
                 true,
                 null);
         when(semanticEventGroupingService.recentCandidates()).thenReturn(candidates);
-        when(openAiCategorizer.classify(any(CategoryClassificationRequest.class)))
+        when(llmCategorizer.classify(any(CategoryClassificationRequest.class)))
                 .thenReturn(result(response));
         when(semanticEventGroupingService.group(
                 SemanticKeyActionDto.MATCHED_EXISTING,
@@ -182,7 +182,7 @@ class CategorizationServiceTest {
                 false,
                 ClassificationRejectionReasonDto.EDITORIAL_RULE_EXCLUDED);
         when(semanticEventGroupingService.recentCandidates()).thenReturn(candidates);
-        when(openAiCategorizer.classify(any(CategoryClassificationRequest.class)))
+        when(llmCategorizer.classify(any(CategoryClassificationRequest.class)))
                 .thenReturn(result(response));
         when(semanticEventGroupingService.group(
                 SemanticKeyActionDto.CREATED_NEW,
@@ -206,7 +206,7 @@ class CategorizationServiceTest {
         mockCategorySync(politics);
         NewsItem newsItem = newsItem(100L);
         when(semanticEventGroupingService.recentCandidates()).thenReturn(emptyCandidates());
-        when(openAiCategorizer.classify(any(CategoryClassificationRequest.class)))
+        when(llmCategorizer.classify(any(CategoryClassificationRequest.class)))
                 .thenReturn(result(response(
                         "sports",
                         List.of("sports"),
@@ -228,7 +228,7 @@ class CategorizationServiceTest {
         mockCategorySync(politics);
         NewsItem newsItem = newsItem(100L);
         when(semanticEventGroupingService.recentCandidates()).thenReturn(emptyCandidates());
-        when(openAiCategorizer.classify(any(CategoryClassificationRequest.class)))
+        when(llmCategorizer.classify(any(CategoryClassificationRequest.class)))
                 .thenReturn(result(response(
                         "politics",
                         List.of("politics"),
@@ -256,14 +256,14 @@ class CategorizationServiceTest {
 
     private CategorizationService service() {
         return new CategorizationService(
-                openAiCategorizer,
+                llmCategorizer,
                 semanticEventGroupingService,
                 categoryRepository,
                 newsItemRepository,
                 newsItemCategoryRepository,
                 classificationRunRepository,
                 categoryProperties(),
-                openAiProperties(),
+                llmProperties(),
                 promptLoader,
                 transactionOperations(),
                 Clock.fixed(NOW, ZoneOffset.UTC));
@@ -289,16 +289,23 @@ class CategorizationServiceTest {
                 List.of("politics"));
     }
 
-    private OpenAiProperties openAiProperties() {
-        return new OpenAiProperties(
-                "test-key",
-                new OpenAiProperties.Models("gpt-5.4-mini", "gpt-5.5"),
-                new OpenAiProperties.Prompts(
+    private LlmProperties llmProperties() {
+        return new LlmProperties(
+                new LlmProperties.UseCase("openai", "gpt-5.4-mini"),
+                new LlmProperties.UseCase("openai", "gpt-5.5"),
+                new LlmProperties.Prompts(
                         "classification-v1",
                         "editorial-rules-v1",
                         "publication-content-v1"),
-                new OpenAiProperties.Timeouts(Duration.ofSeconds(5), Duration.ofSeconds(60)),
-                Duration.ofDays(3));
+                new LlmProperties.OpenAi(
+                        "test-key",
+                        "https://api.openai.com/v1",
+                        new LlmProperties.Timeouts(Duration.ofSeconds(5), Duration.ofSeconds(60))),
+                new LlmProperties.Ollama(
+                        "http://localhost:11434",
+                        new LlmProperties.Timeouts(Duration.ofSeconds(5), Duration.ofSeconds(300)),
+                        "10m",
+                        new LlmProperties.Options(0.0)));
     }
 
     private NewsItem newsItem(Long id) {
@@ -351,7 +358,8 @@ class CategorizationServiceTest {
                 rejectionReason);
     }
 
-    private OpenAiCategorizer.CategorizationResult result(CategoryClassificationResponse response) {
-        return new OpenAiCategorizer.CategorizationResult(response, "{\"semanticKey\":\"test\"}", "gpt-5.4-mini");
+    private LlmCategorizer.CategorizationResult result(CategoryClassificationResponse response) {
+        return new LlmCategorizer.CategorizationResult(
+                response, "{\"semanticKey\":\"test\"}", "gpt-5.4-mini", "openai");
     }
 }

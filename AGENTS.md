@@ -15,9 +15,10 @@ GND Publisher is a Spring Boot application on Java 21. The application periodica
 - Cloud database: PostgreSQL
 - Database migrations: Liquibase
 - Scheduler: Spring scheduling unless a stronger project requirement appears
-- Categorizer: OpenAI GPT5.5-mini
-- Translator and summary generator: OpenAI GPT-5.5
-- External integrations: RSS feeds, OpenAI API, Telegram Bot API
+- LLM providers: pluggable per use case (OpenAI Responses API, local Ollama), selected by configuration
+- Categorizer: the LLM configured for classification
+- Translator and summary generator: the LLM configured for publication content
+- External integrations: RSS feeds, LLM provider APIs, Telegram Bot API
 
 ## Important Docs
 
@@ -26,7 +27,7 @@ GND Publisher is a Spring Boot application on Java 21. The application periodica
 - Development and runtime profiles: `docs/development.md`
 - Security and secrets: `docs/security.md`
 - Database design: `docs/db.md`
-- OpenAI JSON contracts: `docs/openai.md`
+- LLM JSON contracts and provider wire formats: `docs/llm.md`
 
 ## Working Rules
 
@@ -37,7 +38,7 @@ GND Publisher is a Spring Boot application on Java 21. The application periodica
 - Cloud deployments must be packaged as Docker images and deployed to Kubernetes on AWS.
 - Database schema changes must be represented as Liquibase changesets.
 - Do not commit secrets, tokens, channel IDs, API keys, local database files, or local override config.
-- Use OpenAI GPT5.5-mini for category classification unless the project requirements change.
+- Select the LLM provider per use case through `gnd.llm.<use-case>.provider`; never wire a provider adapter directly into a service.
 - Cross-source duplicate detection must use LLM-assisted semantic event grouping with semantic keys, not fingerprints.
 - Keep all possible categories and categories selected for publication as separate configuration lists.
 - Free-form editorial classification rules must be configurable and passed to the classifier when present.
@@ -45,9 +46,12 @@ GND Publisher is a Spring Boot application on Java 21. The application periodica
 - Limit selected publishable items per RSS source per run using configurable source quota settings.
 - Items rejected only by source quota must use `rejection_reason = SOURCE_RUN_QUOTA_EXCEEDED`.
 - Important news digest publishing must be scheduled, configurable, idempotent, and link only to already published Telegram posts.
-- Use OpenAI GPT-5.5 for translation and for news summary generation when the RSS summary is missing or insufficient.
-- OpenAI integration request and response DTOs must follow `docs/openai.md`.
-- OpenAI prompt templates must be stored as text files under `src/main/resources/prompts/`, not hardcoded in Java classes.
+- Use the configured publication content LLM for translation and for news summary generation when the RSS summary is missing or insufficient.
+- LLM request and response DTOs must follow `docs/llm.md` and live under `com.gnd.publisher.dto.llm`.
+- Keep provider-specific code inside `integration/llm/<provider>`; schema construction, parsing, normalization, and validation stay provider-agnostic.
+- Adding a provider means a new adapter package, two `@Bean` methods in `LlmClientsConfiguration`, and one arm in `LlmProperties.readTimeout`.
+- Persist the provider id reported by the completion, never a hardcoded provider literal.
+- LLM prompt templates must be stored as text files under `src/main/resources/prompts/`, not hardcoded in Java classes.
 - Follow the package structure and dependency direction defined in `docs/architecture.md`.
 - When iterating over collections or processing item streams, prefer reactive streams where they fit the flow and keep the code readable.
 - When checking nullable values, prefer `Optional.ofNullable(...)` for null-safe transformations and branching.
@@ -57,8 +61,8 @@ GND Publisher is a Spring Boot application on Java 21. The application periodica
 - Keep source attribution visible in published Telegram messages.
 - Unit tests should use JUnit 5, AssertJ, and Mockito.
 - Do not start the Spring application context in regular unit tests.
-- Do not call real RSS feeds, OpenAI, Telegram, AWS, PostgreSQL, or other external services from unit tests.
-- OpenAI JSON contracts should have fixture-based tests that deserialize request and response examples into DTOs.
+- Do not call real RSS feeds, LLM providers (hosted or local, including Ollama), Telegram, AWS, PostgreSQL, or other external services from unit tests.
+- LLM JSON contracts should have fixture-based tests that deserialize request and response examples into DTOs.
 
 ## Expected Commands
 

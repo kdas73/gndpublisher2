@@ -7,15 +7,15 @@ GND Publisher is a Spring Boot service organized around a scheduled news process
 - Scheduler: triggers periodic RSS ingestion and publication jobs.
 - Feed ingestion: downloads RSS feeds and converts entries into normalized news items.
 - Source deduplication: prevents storing the same RSS item from the same source multiple times using source identifiers and normalized URLs.
-- Semantic event grouping: uses OpenAI gpt-5.4-mini to assign each news item to an existing semantic event key or create a new one.
+- Semantic event grouping: uses the configured classification LLM to assign each news item to an existing semantic event key or create a new one.
 - Persistence: stores sources, news items, semantic events, categories, translations, classification runs, and publication records.
-- Categorization: uses OpenAI gpt-5.4-mini to select publication categories and semantic event keys.
+- Categorization: uses the configured classification LLM to select publication categories and semantic event keys.
 - Source quota selection: limits how many publishable items from one RSS source can continue in each run.
-- Publication content generation: uses OpenAI gpt-5.5 to create or improve selected summaries and produce target-language publication content in one call.
+- Publication content generation: uses the configured publication content LLM to create or improve selected summaries and produce target-language publication content in one call.
 - Telegram publishing: sends target-language publication messages to Telegram channels.
 - Important news digest publishing: periodically publishes a post with links to already published events that are important because they are covered by more than the configured number of semantic duplicates.
 - Cleanup: deletes or archives records older than the configured retention period.
-- Configuration: defines all possible categories, publishable categories, free-form editorial classification rules, per-run source publication limits, important news digest settings, target languages, Telegram routing, OpenAI settings, and provider credentials. RSS source links are stored only in the database.
+- Configuration: defines all possible categories, publishable categories, free-form editorial classification rules, per-run source publication limits, important news digest settings, target languages, Telegram routing, LLM provider selection per use case, and provider credentials. RSS source links are stored only in the database.
 - Deployment: packages the Spring Boot service as a Docker image and runs it on a Kubernetes service on AWS.
 
 ## Processing Pipeline
@@ -25,11 +25,11 @@ GND Publisher is a Spring Boot service organized around a scheduled news process
 3. Each feed entry is normalized into an internal news item.
 4. The persistence layer stores only source-level new or changed items.
 5. The categorization request includes the current news item, all configured category options, publishable category codes, free-form editorial rules, and existing semantic event keys from a configured lookup time window.
-6. OpenAI gpt-5.4-mini chooses an existing semantic event key or returns a new one as a short normalized phrase.
+6. The classification LLM chooses an existing semantic event key or returns a new one as a short normalized phrase.
 7. The news item is linked to the matching or newly created semantic event.
 8. Source quota selection keeps only a configured number of publishable candidates per RSS source for the current run.
 9. Items not selected by the source quota are marked with `rejection_reason = SOURCE_RUN_QUOTA_EXCEEDED`.
-10. OpenAI gpt-5.5 produces language-specific publication content for selected publishable semantic events, using classification context such as semantic key and category codes.
+10. The publication content LLM produces language-specific publication content for selected publishable semantic events, using classification context such as semantic key and category codes.
 11. The publication content response contains the target-language title and summary.
 12. Telegram publishing sends each target-language event to the configured channel for that language.
 13. Publication results are stored at semantic event level to prevent duplicate sends and support troubleshooting.
@@ -51,7 +51,7 @@ Rules:
 - The importance threshold must be configurable. Default threshold: `2`.
 - With threshold `2`, an event qualifies when it has more than two linked source news items.
 - Digest selection should use semantic events and publication records, not raw RSS items alone.
-- Digest posts must not trigger OpenAI publication content generation.
+- Digest posts must not trigger LLM publication content generation.
 - Digest posts must be idempotent per target language, Telegram channel, and semantic event.
 - Telegram publication records must contain enough data to build links to published posts.
 
@@ -134,7 +134,9 @@ com.gnd.publisher
   GndPublisherApplication.java
 
   config
-    OpenAiProperties.java
+    LlmProperties.java
+    ClassificationProperties.java
+    LlmClientsConfiguration.java
     TelegramProperties.java
     CategoryProperties.java
     PublishingProperties.java
@@ -172,7 +174,8 @@ com.gnd.publisher
   dto
     rss
       RssFeedItemDto.java
-    openai
+    llm
+      LlmNewsItemDto.java
       CategoryClassificationRequest.java
       CategoryClassificationResponse.java
       SemanticEventKeyCandidateDto.java
@@ -211,10 +214,24 @@ com.gnd.publisher
     rss
       RssClient.java
       RssFeedParser.java
-    openai
-      OpenAiClient.java
-      OpenAiCategorizer.java
-      OpenAiPublicationContentGenerator.java
+    llm
+      LlmClient.java
+      LlmCompletionRequest.java
+      LlmCompletion.java
+      LlmClientRegistry.java
+      LlmHttpSender.java
+      JdkLlmHttpSender.java
+      AbstractHttpLlmClient.java
+      LlmCategorizer.java
+      LlmPublicationContentGenerator.java
+      LlmResponseSchemas.java
+      LlmResponseNormalizer.java
+      LlmResponseValidator.java
+      PromptLoader.java
+      openai
+        OpenAiLlmClient.java
+      ollama
+        OllamaLlmClient.java
     telegram
       TelegramBotClient.java
 
@@ -227,7 +244,7 @@ com.gnd.publisher
 
   exception
     FeedReadException.java
-    OpenAiIntegrationException.java
+    LlmIntegrationException.java
     TelegramPublishException.java
     DuplicateSourceNewsItemException.java
 
@@ -239,14 +256,14 @@ com.gnd.publisher
 
 ## Layer Responsibilities
 
-- `config`: Spring configuration and typed properties for categories, editorial rules, publishing limits, scheduling, cleanup retention, OpenAI, Telegram, profiles, and database settings. RSS source URLs are not runtime properties; they are database records.
+- `config`: Spring configuration and typed properties for categories, editorial rules, publishing limits, scheduling, cleanup retention, LLM providers, Telegram, profiles, and database settings. It is also the composition root that constructs the provider adapters. RSS source URLs are not runtime properties; they are database records.
 - `scheduler`: scheduled entry points only. Scheduler classes should trigger services and should not contain business logic.
 - `service`: application business logic and orchestration: ingestion, source deduplication, semantic event grouping, categorization, source quota selection, publication content generation, routing, publication, important news digest publishing, and cleanup.
-- `integration`: external system clients and adapters for RSS, OpenAI, and Telegram.
+- `integration`: external system clients and adapters for RSS, LLM providers, and Telegram.
 - `repository`: database access through Spring Data repositories.
 - `domain.model`: persistent domain entities and core domain objects.
 - `domain.enums`: stable domain enums used by entities and services.
-- `dto`: boundary objects for RSS, OpenAI, Telegram, and future API responses.
+- `dto`: boundary objects for RSS, LLM providers, Telegram, and future API responses.
 - `mapper`: conversions between DTOs, entities, and message objects.
 - `exception`: project-specific exceptions with meaningful failure boundaries.
 - `util`: small stateless helpers that do not belong to a specific domain service.
@@ -264,13 +281,38 @@ service -> dto only at integration boundaries
 
 Do not add `controller` packages until the application needs a REST API, admin API, or UI-facing endpoints.
 
-## OpenAI Usage
+## LLM Usage
 
-- Categorization model: `gpt-5.4-mini`.
-- Publication content generation model: `gpt-5.5`.
-- OpenAI prompt versions and model names should be configurable.
-- OpenAI prompt templates and editorial classification rules must be stored as text files under `src/main/resources/prompts/`.
-- OpenAI JSON request and response contracts are defined in `docs/openai.md`.
+The application depends on a transport-level LLM port, not on any one vendor. Classification and
+publication content generation each select a provider through configuration.
+
+### Provider Abstraction
+
+- `LlmClient` is the port: `providerId()` plus `complete(LlmCompletionRequest)`. A request carries the
+  model, instructions, input JSON, a response JSON Schema, and a read timeout; a completion carries
+  the raw output text plus the model and provider that produced it.
+- Provider adapters live in `integration/llm/openai` and `integration/llm/ollama` and contain wire
+  format only. `AbstractHttpLlmClient` owns the shared transport plumbing and makes `complete` final.
+- Schema construction, response parsing, normalization, and validation are provider-agnostic and
+  shared by every provider, so results are equivalent whichever provider is configured.
+- `LlmClientRegistry` resolves an adapter by configured provider id. Every adapter stays registered;
+  the choice is data, not wiring. An unknown id fails with `LlmIntegrationException`.
+- Switching a use case between providers requires only a configuration change and a restart. Provider
+  selection is deliberately not hot-swappable.
+
+### Use Cases And Configuration
+
+- Categorization: `gnd.llm.categorization.provider` and `gnd.llm.categorization.model`.
+- Publication content generation: `gnd.llm.publication-content.provider` and `.model`.
+- Both default to the `openai` provider. The `ollama` Spring profile points both at a local Ollama
+  instance; `--spring.profiles.active=local,ollama` switches them together.
+- An OpenAI API key is required only when a use case actually targets OpenAI.
+- Prompt versions and model names are configurable.
+- Prompt templates and editorial classification rules must be stored as text files under
+  `src/main/resources/prompts/`.
+- The provider-neutral JSON request and response contracts, plus the per-provider wire formats, are
+  defined in `docs/llm.md`.
+- The provider that actually produced a row is persisted on it, rather than assumed.
 - The application configuration must define all possible categories and a separate list of categories selected for publication.
 - The application configuration must define free-form editorial classification rules and an editorial rules version.
 - The application configuration must define the default max publishable items per source per run and may define per-source overrides.
@@ -331,7 +373,7 @@ Liquibase is responsible for database initialization and schema updates.
 
 ## Areas To Revisit
 
-- OpenAI cost controls and token budgeting.
+- LLM cost controls and token budgeting.
 - Category prompt design and structured output format.
 - Retry policy and dead-letter handling.
 - Whether cleanup should hard-delete records or archive them first.

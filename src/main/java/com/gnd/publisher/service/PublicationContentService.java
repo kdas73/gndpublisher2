@@ -5,16 +5,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Objects;
 
-import com.gnd.publisher.config.OpenAiProperties;
 import com.gnd.publisher.config.PublishingProperties;
 import com.gnd.publisher.domain.model.Category;
 import com.gnd.publisher.domain.model.NewsItem;
 import com.gnd.publisher.domain.model.NewsItemCategory;
 import com.gnd.publisher.domain.model.SemanticNewsEvent;
 import com.gnd.publisher.domain.model.Translation;
-import com.gnd.publisher.dto.openai.PublicationContentRequest;
-import com.gnd.publisher.dto.openai.PublicationContentResponse;
-import com.gnd.publisher.integration.openai.OpenAiPublicationContentGenerator;
+import com.gnd.publisher.dto.llm.PublicationContentRequest;
+import com.gnd.publisher.dto.llm.PublicationContentResponse;
+import com.gnd.publisher.integration.llm.LlmPublicationContentGenerator;
 import com.gnd.publisher.repository.NewsItemCategoryRepository;
 import com.gnd.publisher.repository.NewsItemRepository;
 import com.gnd.publisher.repository.TranslationRepository;
@@ -28,24 +27,20 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class PublicationContentService {
 
-    private static final String PROVIDER = "openai";
-
-    private final OpenAiPublicationContentGenerator generator;
+    private final LlmPublicationContentGenerator generator;
     private final TranslationRepository translationRepository;
     private final NewsItemRepository newsItemRepository;
     private final NewsItemCategoryRepository newsItemCategoryRepository;
     private final PublishingProperties publishingProperties;
-    private final OpenAiProperties openAiProperties;
     private final TransactionOperations transactionOperations;
 
     @Autowired
     public PublicationContentService(
-            OpenAiPublicationContentGenerator generator,
+            LlmPublicationContentGenerator generator,
             TranslationRepository translationRepository,
             NewsItemRepository newsItemRepository,
             NewsItemCategoryRepository newsItemCategoryRepository,
             PublishingProperties publishingProperties,
-            OpenAiProperties openAiProperties,
             PlatformTransactionManager transactionManager) {
         this(
                 generator,
@@ -53,24 +48,21 @@ public class PublicationContentService {
                 newsItemRepository,
                 newsItemCategoryRepository,
                 publishingProperties,
-                openAiProperties,
                 new TransactionTemplate(transactionManager));
     }
 
     PublicationContentService(
-            OpenAiPublicationContentGenerator generator,
+            LlmPublicationContentGenerator generator,
             TranslationRepository translationRepository,
             NewsItemRepository newsItemRepository,
             NewsItemCategoryRepository newsItemCategoryRepository,
             PublishingProperties publishingProperties,
-            OpenAiProperties openAiProperties,
             TransactionOperations transactionOperations) {
         this.generator = generator;
         this.translationRepository = translationRepository;
         this.newsItemRepository = newsItemRepository;
         this.newsItemCategoryRepository = newsItemCategoryRepository;
         this.publishingProperties = publishingProperties;
-        this.openAiProperties = openAiProperties;
         this.transactionOperations = transactionOperations;
     }
 
@@ -98,8 +90,9 @@ public class PublicationContentService {
         if (plan.existingTranslation() != null) {
             return Optional.of(plan.existingTranslation());
         }
-        PublicationContentResponse response = generator.prepare(Objects.requireNonNull(plan.request()));
-        return Optional.of(saveGeneratedTranslation(plan, response));
+        LlmPublicationContentGenerator.PublicationContentResult result =
+                generator.prepare(Objects.requireNonNull(plan.request()));
+        return Optional.of(saveGeneratedTranslation(plan, result));
     }
 
     private PublicationContentPlan contentPlan(NewsItem selectedItem, String targetLanguage) {
@@ -121,7 +114,10 @@ public class PublicationContentService {
                 request(newsItem, semanticEvent, targetLanguage));
     }
 
-    private Translation saveGeneratedTranslation(PublicationContentPlan plan, PublicationContentResponse response) {
+    private Translation saveGeneratedTranslation(
+            PublicationContentPlan plan,
+            LlmPublicationContentGenerator.PublicationContentResult result) {
+        PublicationContentResponse response = result.response();
         return Objects.requireNonNull(transactionOperations.execute(status -> {
             Translation translation = Translation.publicationContent(
                     plan.semanticEvent(),
@@ -129,8 +125,8 @@ public class PublicationContentService {
                     plan.targetLanguage(),
                     response.title(),
                     response.summary(),
-                    PROVIDER,
-                    openAiProperties.models().publicationContent());
+                    result.providerId(),
+                    result.model());
             return translationRepository.save(translation);
         }));
     }

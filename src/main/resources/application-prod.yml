@@ -20,8 +20,11 @@ gnd:
       cron: "${GND_IMPORTANT_NEWS_DIGEST_CRON:0 0 */6 * * *}"
     cleanup:
       cron: "${GND_CLEANUP_CRON:0 0 2 * * *}"
-  openai:
-    api-key: ${OPENAI_API_KEY}
+  llm:
+    # Empty default on purpose: an Ollama-only deployment must reach configuration validation
+    # rather than failing on an unresolvable placeholder.
+    openai:
+      api-key: ${OPENAI_API_KEY:}
   telegram:
     bot-token: ${TELEGRAM_BOT_TOKEN}
     channels:

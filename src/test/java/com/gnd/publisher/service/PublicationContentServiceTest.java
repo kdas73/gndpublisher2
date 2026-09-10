@@ -6,14 +6,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.gnd.publisher.config.OpenAiProperties;
 import com.gnd.publisher.config.PublishingProperties;
 import com.gnd.publisher.domain.model.Category;
 import com.gnd.publisher.domain.model.NewsItem;
@@ -21,10 +19,10 @@ import com.gnd.publisher.domain.model.NewsItemCategory;
 import com.gnd.publisher.domain.model.RssSource;
 import com.gnd.publisher.domain.model.SemanticNewsEvent;
 import com.gnd.publisher.domain.model.Translation;
-import com.gnd.publisher.dto.openai.PublicationContentRequest;
-import com.gnd.publisher.dto.openai.PublicationContentResponse;
+import com.gnd.publisher.dto.llm.PublicationContentRequest;
+import com.gnd.publisher.dto.llm.PublicationContentResponse;
 import com.gnd.publisher.dto.rss.RssFeedItemDto;
-import com.gnd.publisher.integration.openai.OpenAiPublicationContentGenerator;
+import com.gnd.publisher.integration.llm.LlmPublicationContentGenerator;
 import com.gnd.publisher.repository.NewsItemCategoryRepository;
 import com.gnd.publisher.repository.NewsItemRepository;
 import com.gnd.publisher.repository.TranslationRepository;
@@ -44,7 +42,7 @@ class PublicationContentServiceTest {
     private static final Instant NOW = Instant.parse("2026-07-01T12:00:00Z");
 
     @Mock
-    private OpenAiPublicationContentGenerator generator;
+    private LlmPublicationContentGenerator generator;
 
     @Mock
     private TranslationRepository translationRepository;
@@ -66,14 +64,18 @@ class PublicationContentServiceTest {
                 .thenReturn(List.of(NewsItemCategory.classifierMatch(
                         newsItem,
                         politics,
+                        "openai",
                         "gpt-5.4-mini",
                         java.math.BigDecimal.valueOf(0.91),
                         NOW)));
         when(generator.prepare(any(PublicationContentRequest.class)))
-                .thenReturn(new PublicationContentResponse(
-                        "Greek parliament approves new migration bill",
-                        "Greek lawmakers approved a new migration bill after debate.",
-                        0.9));
+                .thenReturn(new LlmPublicationContentGenerator.PublicationContentResult(
+                        new PublicationContentResponse(
+                                "Greek parliament approves new migration bill",
+                                "Greek lawmakers approved a new migration bill after debate.",
+                                0.9),
+                        "translategemma:4b",
+                        "ollama"));
         when(translationRepository.save(any(Translation.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -84,8 +86,9 @@ class PublicationContentServiceTest {
                     assertThat(translation.getSemanticEvent()).isSameAs(newsItem.getSemanticEvent());
                     assertThat(translation.getNewsItem()).isSameAs(newsItem);
                     assertThat(translation.getTargetLanguage()).isEqualTo("en");
-                    assertThat(translation.getProvider()).isEqualTo("openai");
-                    assertThat(translation.getModel()).isEqualTo("gpt-5.5");
+                    // The provider and model that actually produced the content, not a literal.
+                    assertThat(translation.getProvider()).isEqualTo("ollama");
+                    assertThat(translation.getModel()).isEqualTo("translategemma:4b");
                 });
 
         ArgumentCaptor<PublicationContentRequest> requestCaptor =
@@ -137,10 +140,13 @@ class PublicationContentServiceTest {
         when(generator.prepare(any(PublicationContentRequest.class)))
                 .thenAnswer(invocation -> {
                     PublicationContentRequest request = invocation.getArgument(0);
-                    return new PublicationContentResponse(
-                            "Title " + request.targetLanguage(),
-                            "Summary " + request.targetLanguage(),
-                            0.9);
+                    return new LlmPublicationContentGenerator.PublicationContentResult(
+                            new PublicationContentResponse(
+                                    "Title " + request.targetLanguage(),
+                                    "Summary " + request.targetLanguage(),
+                                    0.9),
+                            "translategemma:4b",
+                            "ollama");
                 });
         when(translationRepository.save(any(Translation.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -172,7 +178,6 @@ class PublicationContentServiceTest {
                 newsItemRepository,
                 newsItemCategoryRepository,
                 publishingProperties(targetLanguages),
-                openAiProperties(),
                 transactionOperations());
     }
 
@@ -193,18 +198,6 @@ class PublicationContentServiceTest {
                 600,
                 3500,
                 new PublishingProperties.ImportantNewsDigest(true, 2, "important-news"));
-    }
-
-    private OpenAiProperties openAiProperties() {
-        return new OpenAiProperties(
-                "test-key",
-                new OpenAiProperties.Models("gpt-5.4-mini", "gpt-5.5"),
-                new OpenAiProperties.Prompts(
-                        "classification-v1",
-                        "editorial-rules-v1",
-                        "publication-content-v1"),
-                new OpenAiProperties.Timeouts(Duration.ofSeconds(5), Duration.ofSeconds(60)),
-                Duration.ofDays(3));
     }
 
     private NewsItem selectedNewsItem(Long id, Category category) {
