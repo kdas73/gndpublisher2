@@ -23,7 +23,7 @@ Rule of thumb: **catch at the narrowest boundary that lets sibling work continue
 | Exception | Thrown by | Caught at |
 |---|---|---|
 | `FeedReadException` | RSS integration layer | `FeedIngestionService.ingestSource` (per-source) |
-| `OpenAiIntegrationException` | OpenAI integration layer | `CategorizationService.classifyOne` (per-item), `PublicationContentService` |
+| `LlmIntegrationException` | LLM integration layer (any provider) | `CategorizationService.classifyOne` (per-item), `PublicationContentService` |
 | `TelegramPublishException` | Telegram integration layer | `PublicationService.publishToChannel` / `ImportantNewsDigestService.sendDigest` (per-channel) |
 | Spring `DataAccessException` hierarchy | Repository/JPA calls | Wherever it surfaces inside the nearest boundary above, or `PipelineRunSupport.run` as the last resort |
 
@@ -35,7 +35,7 @@ Rule of thumb: **catch at the narrowest boundary that lets sibling work continue
 
 - `application.yml` sets `management.endpoint.health.probes.enabled: true`, which auto-exposes `/actuator/health/liveness` and `/actuator/health/readiness` health groups (Spring Boot 3 feature), and `management.endpoints.web.exposure.include: health,info,metrics` exposes them over HTTP.
 - This app has no REST controllers; actuator's HTTP endpoints require `spring-boot-starter-web` (added as part of task 015 - previously the app had `WebApplicationType.NONE` with no embedded server at all, making the existing health-probe config inert).
-- No custom `HealthIndicator` bean was added. Boot's auto-configured `DataSource` indicator already covers the only meaningful readiness signal for this batch app. Deliberately **do not** add OpenAI/Telegram health indicators: a transient external outage should not flip the pod to NotReady and get it killed/restarted by Kubernetes, since the whole point of the per-item error boundaries above is tolerating exactly that kind of failure without treating it as a pod-level failure.
+- No custom `HealthIndicator` bean was added. Boot's auto-configured `DataSource` indicator already covers the only meaningful readiness signal for this batch app. Deliberately **do not** add LLM/Telegram health indicators: a transient external outage should not flip the pod to NotReady and get it killed/restarted by Kubernetes, since the whole point of the per-item error boundaries above is tolerating exactly that kind of failure without treating it as a pod-level failure.
 - Task 014 (Docker/K8s, not yet implemented) will wire `/actuator/health/liveness` and `/actuator/health/readiness` into the Kubernetes probe configuration.
 
 ## Metrics
@@ -45,6 +45,7 @@ Rule of thumb: **catch at the narrowest boundary that lets sibling work continue
 
 ## Secret And Payload Redaction
 
-- Exception messages thrown by `HttpOpenAiClient`/`HttpTelegramBotClient` are built only from response error fields (truncated to 1000 characters via `MAX_ERROR_BODY_LENGTH`), never from the outbound request JSON, the `Authorization` header, or the bot token embedded in the request URI.
+- Exception messages thrown by `OpenAiLlmClient`/`OllamaLlmClient`/`HttpTelegramBotClient` are built only from response error fields (truncated to 1000 characters via `MAX_ERROR_BODY_LENGTH`), never from the outbound request JSON, the `Authorization` header, or the bot token embedded in the request URI. `AbstractHttpLlmClient.complete` is `final` and constructs its message solely from the response body, so this property holds for any future provider adapter by construction.
+- `OllamaLlmClient` sends no `Authorization` header at all, because the Ollama API is unauthenticated. Its leak test therefore guards the request *payload* rather than a credential.
 - `ClassificationRun.rawResponse` is persisted to the database for audit purposes only and must never be passed to a logger.
-- Regression tests enforce this: `HttpOpenAiClientTest.doesNotLeakApiKeyOrRequestPayloadIntoExceptionMessageOnHttpError` and `HttpTelegramBotClientTest.doesNotLeakBotTokenIntoExceptionMessageOnTelegramError` assert the configured secret literals never appear in thrown exception messages.
+- Regression tests enforce this: `OpenAiLlmClientTest.doesNotLeakApiKeyOrRequestPayloadIntoExceptionMessageOnHttpError`, `OllamaLlmClientTest.doesNotLeakRequestPayloadIntoExceptionMessageOnHttpError`, and `HttpTelegramBotClientTest.doesNotLeakBotTokenIntoExceptionMessageOnTelegramError` assert the configured secret literals and request payloads never appear in thrown exception messages.

@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.gnd.publisher.config.CategoryProperties;
-import com.gnd.publisher.config.OpenAiProperties;
+import com.gnd.publisher.config.LlmProperties;
 import com.gnd.publisher.domain.enums.RejectionReason;
 import com.gnd.publisher.domain.enums.SemanticKeyAction;
 import com.gnd.publisher.domain.model.Category;
@@ -20,15 +20,15 @@ import com.gnd.publisher.domain.model.ClassificationRun;
 import com.gnd.publisher.domain.model.NewsItem;
 import com.gnd.publisher.domain.model.NewsItemCategory;
 import com.gnd.publisher.domain.model.SemanticNewsEvent;
-import com.gnd.publisher.dto.openai.CategoryClassificationRequest;
-import com.gnd.publisher.dto.openai.CategoryClassificationResponse;
-import com.gnd.publisher.dto.openai.CategoryOptionDto;
-import com.gnd.publisher.dto.openai.ClassificationRejectionReasonDto;
-import com.gnd.publisher.dto.openai.OpenAiNewsItemDto;
-import com.gnd.publisher.dto.openai.SemanticKeyActionDto;
-import com.gnd.publisher.exception.OpenAiIntegrationException;
-import com.gnd.publisher.integration.openai.OpenAiCategorizer;
-import com.gnd.publisher.integration.openai.PromptLoader;
+import com.gnd.publisher.dto.llm.CategoryClassificationRequest;
+import com.gnd.publisher.dto.llm.CategoryClassificationResponse;
+import com.gnd.publisher.dto.llm.CategoryOptionDto;
+import com.gnd.publisher.dto.llm.ClassificationRejectionReasonDto;
+import com.gnd.publisher.dto.llm.LlmNewsItemDto;
+import com.gnd.publisher.dto.llm.SemanticKeyActionDto;
+import com.gnd.publisher.exception.LlmIntegrationException;
+import com.gnd.publisher.integration.llm.LlmCategorizer;
+import com.gnd.publisher.integration.llm.PromptLoader;
 import com.gnd.publisher.logging.LogFields;
 import com.gnd.publisher.logging.LoggingContext;
 import com.gnd.publisher.repository.CategoryRepository;
@@ -51,64 +51,64 @@ public class CategorizationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CategorizationService.class);
 
-    private final OpenAiCategorizer openAiCategorizer;
+    private final LlmCategorizer llmCategorizer;
     private final SemanticEventGroupingService semanticEventGroupingService;
     private final CategoryRepository categoryRepository;
     private final NewsItemRepository newsItemRepository;
     private final NewsItemCategoryRepository newsItemCategoryRepository;
     private final ClassificationRunRepository classificationRunRepository;
     private final CategoryProperties categoryProperties;
-    private final OpenAiProperties openAiProperties;
+    private final LlmProperties llmProperties;
     private final PromptLoader promptLoader;
     private final TransactionOperations transactionOperations;
     private final Clock clock;
 
     @Autowired
     public CategorizationService(
-            OpenAiCategorizer openAiCategorizer,
+            LlmCategorizer llmCategorizer,
             SemanticEventGroupingService semanticEventGroupingService,
             CategoryRepository categoryRepository,
             NewsItemRepository newsItemRepository,
             NewsItemCategoryRepository newsItemCategoryRepository,
             ClassificationRunRepository classificationRunRepository,
             CategoryProperties categoryProperties,
-            OpenAiProperties openAiProperties,
+            LlmProperties llmProperties,
             PromptLoader promptLoader,
             PlatformTransactionManager transactionManager) {
         this(
-                openAiCategorizer,
+                llmCategorizer,
                 semanticEventGroupingService,
                 categoryRepository,
                 newsItemRepository,
                 newsItemCategoryRepository,
                 classificationRunRepository,
                 categoryProperties,
-                openAiProperties,
+                llmProperties,
                 promptLoader,
                 new TransactionTemplate(transactionManager),
                 Clock.systemUTC());
     }
 
     CategorizationService(
-            OpenAiCategorizer openAiCategorizer,
+            LlmCategorizer llmCategorizer,
             SemanticEventGroupingService semanticEventGroupingService,
             CategoryRepository categoryRepository,
             NewsItemRepository newsItemRepository,
             NewsItemCategoryRepository newsItemCategoryRepository,
             ClassificationRunRepository classificationRunRepository,
             CategoryProperties categoryProperties,
-            OpenAiProperties openAiProperties,
+            LlmProperties llmProperties,
             PromptLoader promptLoader,
             TransactionOperations transactionOperations,
             Clock clock) {
-        this.openAiCategorizer = openAiCategorizer;
+        this.llmCategorizer = llmCategorizer;
         this.semanticEventGroupingService = semanticEventGroupingService;
         this.categoryRepository = categoryRepository;
         this.newsItemRepository = newsItemRepository;
         this.newsItemCategoryRepository = newsItemCategoryRepository;
         this.classificationRunRepository = classificationRunRepository;
         this.categoryProperties = categoryProperties;
-        this.openAiProperties = openAiProperties;
+        this.llmProperties = llmProperties;
         this.promptLoader = promptLoader;
         this.transactionOperations = transactionOperations;
         this.clock = clock;
@@ -141,7 +141,7 @@ public class CategorizationService {
                     categoryProperties.publishableCodes(),
                     editorialRules,
                     candidates.dtos());
-            OpenAiCategorizer.CategorizationResult result = openAiCategorizer.classify(request);
+            LlmCategorizer.CategorizationResult result = llmCategorizer.classify(request);
             CategoryClassificationResponse response = result.response();
             transactionOperations.executeWithoutResult(status ->
                     saveSuccessfulClassification(newsItem, categoriesByCode, candidates, result, response, classifiedAt));
@@ -158,7 +158,7 @@ public class CategorizationService {
             NewsItem newsItem,
             Map<String, Category> categoriesByCode,
             CandidateSemanticEvents candidates,
-            OpenAiCategorizer.CategorizationResult result,
+            LlmCategorizer.CategorizationResult result,
             CategoryClassificationResponse response,
             Instant classifiedAt) {
         validateResponseCategories(response, categoriesByCode.keySet());
@@ -181,7 +181,14 @@ public class CategorizationService {
                 rejectionReason,
                 classifiedAt);
         newsItemRepository.save(newsItem);
-        saveCategoryMatches(newsItem, response.categoryCodes(), categoriesByCode, result.model(), confidence, classifiedAt);
+        saveCategoryMatches(
+                newsItem,
+                response.categoryCodes(),
+                categoriesByCode,
+                result.providerId(),
+                result.model(),
+                confidence,
+                classifiedAt);
         saveClassificationRun(
                 newsItem,
                 groupedEvent.semanticEvent(),
@@ -229,14 +236,14 @@ public class CategorizationService {
     }
 
     private List<String> editorialRules() {
-        return promptLoader.load(openAiProperties.prompts().editorialRulesVersion()).lines()
+        return promptLoader.load(llmProperties.prompts().editorialRulesVersion()).lines()
                 .map(String::strip)
                 .filter(line -> !line.isBlank())
                 .toList();
     }
 
-    private OpenAiNewsItemDto newsItemDto(NewsItem newsItem) {
-        return new OpenAiNewsItemDto(
+    private LlmNewsItemDto newsItemDto(NewsItem newsItem) {
+        return new LlmNewsItemDto(
                 newsItem.getTitle(),
                 newsItem.getSummary(),
                 newsItem.getSource().getName(),
@@ -246,20 +253,20 @@ public class CategorizationService {
 
     private void validateResponseCategories(CategoryClassificationResponse response, Set<String> categoryCodes) {
         if (response.semanticKeyAction() == null) {
-            throw new OpenAiIntegrationException("Classification semanticKeyAction is required");
+            throw new LlmIntegrationException("Classification semanticKeyAction is required");
         }
         if (!categoryCodes.contains(response.primaryCategoryCode())) {
-            throw new OpenAiIntegrationException("Classification primaryCategoryCode is not configured: "
+            throw new LlmIntegrationException("Classification primaryCategoryCode is not configured: "
                     + response.primaryCategoryCode());
         }
         if (response.categoryCodes().stream().anyMatch(code -> !categoryCodes.contains(code))) {
-            throw new OpenAiIntegrationException("Classification categoryCodes contain an unconfigured category");
+            throw new LlmIntegrationException("Classification categoryCodes contain an unconfigured category");
         }
     }
 
     private Category category(String code, Map<String, Category> categoriesByCode) {
         return java.util.Optional.ofNullable(categoriesByCode.get(code))
-                .orElseThrow(() -> new OpenAiIntegrationException("Category not configured: " + code));
+                .orElseThrow(() -> new LlmIntegrationException("Category not configured: " + code));
     }
 
     private RejectionReason rejectionReason(CategoryClassificationResponse response) {
@@ -280,6 +287,7 @@ public class CategorizationService {
             NewsItem newsItem,
             List<String> categoryCodes,
             Map<String, Category> categoriesByCode,
+            String providerId,
             String model,
             BigDecimal confidence,
             Instant createdAt) {
@@ -289,6 +297,7 @@ public class CategorizationService {
                 .map(code -> NewsItemCategory.classifierMatch(
                         newsItem,
                         category(code, categoriesByCode),
+                        providerId,
                         model,
                         confidence,
                         createdAt))
@@ -302,7 +311,7 @@ public class CategorizationService {
             SemanticNewsEvent matchedSemanticEvent,
             Category primaryCategory,
             CandidateSemanticEvents candidates,
-            OpenAiCategorizer.CategorizationResult result,
+            LlmCategorizer.CategorizationResult result,
             BigDecimal confidence,
             Instant createdAt) {
         CategoryClassificationResponse response = result.response();
@@ -313,7 +322,7 @@ public class CategorizationService {
                 candidates.dtos().size(),
                 candidates.lookupWindowStartedAt(),
                 candidates.lookupWindowEndedAt(),
-                openAiProperties.prompts().editorialRulesVersion(),
+                llmProperties.prompts().editorialRulesVersion(),
                 response.semanticKey(),
                 SemanticKeyAction.valueOf(response.semanticKeyAction().name()),
                 matchedSemanticEvent,

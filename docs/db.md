@@ -116,7 +116,7 @@ Expected fields:
 - `created_at`
 - `updated_at`
 
-`semantic_key` is a short normalized phrase returned by OpenAI gpt-5.4-mini. It should not be globally unique across all time because similar events can happen again later. Matching must be controlled by application logic using a configured lookup time window.
+`semantic_key` is a short normalized phrase returned by the classification LLM. It should not be globally unique across all time because similar events can happen again later. Matching must be controlled by application logic using a configured lookup time window.
 
 ### categories
 
@@ -134,7 +134,9 @@ Expected fields:
 
 ### news_item_categories
 
-Maps news items to categories. Categorization is performed by OpenAI gpt-5.4-mini.
+Maps news items to categories. Categorization is performed by the configured classification LLM.
+
+`matched_by` records the id of the provider that actually produced the classification (`openai`, `ollama`), taken from the completion rather than assumed. Rows written before task 017 store the literal `OPENAI`, so ad-hoc queries over this column should match case-insensitively. `model` records the model reported for that same completion.
 
 Expected fields:
 
@@ -171,7 +173,9 @@ Expected fields:
 
 ### translations
 
-Stores target-language publication content for selected semantic events or their canonical news items. Publication content generation is performed by OpenAI gpt-5.5.
+Stores target-language publication content for selected semantic events or their canonical news items. Publication content generation is performed by the configured publication content LLM.
+
+`provider` and `model` record the provider and model that actually produced the row, taken from the completion rather than from a hardcoded literal.
 
 Expected fields:
 
@@ -194,7 +198,7 @@ unique(semantic_event_id, target_language)
 
 ### news_summaries
 
-Stores generated or improved source-language summaries if the application later needs a canonical summary separate from target-language publication content. The current OpenAI publication content flow writes target-language title and summary to `translations`.
+Stores generated or improved source-language summaries if the application later needs a canonical summary separate from target-language publication content. The current publication content flow writes target-language title and summary to `translations`.
 
 Expected fields:
 

@@ -25,7 +25,7 @@ class ObservabilityHealthEndpointTest {
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + DATABASE_FILE);
-        registry.add("gnd.openai.api-key", () -> "test-api-key");
+        registry.add("gnd.llm.openai.api-key", () -> "test-api-key");
         registry.add("gnd.telegram.bot-token", () -> "test-bot-token");
         registry.add("gnd.telegram.channels[0].code", () -> "news-ru");
         registry.add("gnd.telegram.channels[0].language", () -> "ru");
